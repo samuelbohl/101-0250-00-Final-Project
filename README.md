@@ -4,7 +4,7 @@
 
 
 [Add some short info here about the project, an abstract in a sense, and link to the documentation for [**Part-1**](/docs/part1.md) and [**Part-2**](/docs/part2.md).]
-
+![GitHub](https://img.shields.io/github/license/samuelbohl/101-0250-00-Final-Project)
 ## Meta-Info (delete this)
 
 This project was generated with
