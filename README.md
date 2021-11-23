@@ -1,4 +1,4 @@
-# Final Project Repo
+ # Solving partial differential equations in parallel on GPUs <br/> Final Project
 
 [![Build Status](https://github.com/eth-vaw-glaciology/FinalProjectRepo.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/eth-vaw-glaciology/FinalProjectRepo.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 
