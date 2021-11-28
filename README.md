@@ -9,6 +9,9 @@
 
 </div>
 
+This final project consists of 2 Parts. 
 
-[Add some short info here about the project, an abstract in a sense, and link to the documentation for [**Part-1**](/docs/part1.md) and [**Part-2**](/docs/part2.md).]
+[**Part 1:**](/docs/part1.md) consists of a 3D multi-XPUs diffusion solver. A steady state solution of a diffusive process for given physical time steps using the pseudo-transient acceleration (using the so-called "dual-time" method).
+
+[**Part 2:**](/docs/part2.md) covers the 3D elastic wave propagation problem. 
 
