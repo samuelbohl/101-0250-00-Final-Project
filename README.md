@@ -1,7 +1,8 @@
  # Solving partial differential equations in parallel on GPUs <br/> Final Project
 <div align="center">
  
-[![Build Status](https://github.com/eth-vaw-glaciology/FinalProjectRepo.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/eth-vaw-glaciology/FinalProjectRepo.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![Run tests](https://github.com/samuelbohl/101-0250-00-Final-Project/actions/workflows/CI.yml/badge.svg)](https://github.com/samuelbohl/101-0250-00-Final-Project/actions/workflows/CI.yml)
+>>>>>>> 2e43647d7603d657f9400307f1042a6a18774c6f
 ![GitHub](https://img.shields.io/github/license/samuelbohl/101-0250-00-Final-Project)
 ![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/samuelbohl/101-0250-00-Final-Project?include_prereleases)
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/samuelbohl/101-0250-00-Final-Project?include_prereleases)
@@ -9,5 +10,10 @@
 </div>
 
 
-[Add some short info here about the project, an abstract in a sense, and link to the documentation for [**Part-1**](/docs/part1.md) and [**Part-2**](/docs/part2.md).]
+This final project consists of 2 Parts. 
+
+[**Part 1:**](/docs/part1.md) consists of a 3D multi-XPUs diffusion solver. A steady state solution of a diffusive process for given physical time steps using the pseudo-transient acceleration (using the so-called "dual-time" method).
+
+[**Part 2:**](/docs/part2.md) covers the 3D elastic wave propagation problem. 
+>>>>>>> 2e43647d7603d657f9400307f1042a6a18774c6f
 
