@@ -35,7 +35,7 @@ using Plots, Statistics, LinearAlgebra
         qy         .= .-diff(H[2:end-1, :, 2:end-1], dims=2)./dy
         qz         .= .-diff(H[2:end-1, 2:end-1, :], dims=3)./dz
 
-        dHdt       .= .-(diff(qx, dims=1)./dx .+ diff(qy, dims=2)./dy .+ diff(qz, dims=3)./dz)
+        dHdt       .= .-(diff(qx, dims=1)./dx .+ diff(qy, dims=2)./dy .+ diff(qz, dims=3)./dz) .+ dHdt .* dmp
         
         H[2:end-1, 2:end-1, 2:end-1] .= H[2:end-1, 2:end-1, 2:end-1] .+ dt .* dHdt
         
