@@ -1,6 +1,8 @@
 # Testing part 1
 
-include("../scripts-part1/part1.jl") # modify to include the correct script
+#include("../scripts-part1/part1.jl") # modify to include the correct script
+
+include("../scripts-part1/diffusion_3D_naive.jl")
 
 # Add unit and reference tests
 
