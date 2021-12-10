@@ -2,9 +2,12 @@
 <div align="center">
  
 [![Run tests](https://github.com/samuelbohl/101-0250-00-Final-Project/actions/workflows/CI.yml/badge.svg)](https://github.com/samuelbohl/101-0250-00-Final-Project/actions/workflows/CI.yml)
+ 
+ <!--  
 ![GitHub](https://img.shields.io/github/license/samuelbohl/101-0250-00-Final-Project)
 ![GitHub tag (latest SemVer pre-release)](https://img.shields.io/github/v/tag/samuelbohl/101-0250-00-Final-Project?include_prereleases)
 ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/samuelbohl/101-0250-00-Final-Project?include_prereleases)
+-->
 
 </div>
 
