@@ -37,9 +37,15 @@ end
     dHdt2 = copy(dHdt)
     ResH  = @zeros(nx-2, ny-2, nz-2)
     # Initial condition
-    H0    =  Data.Array([2.0 * exp(-(xc[ix] - 0.5*lx)^2 -(yc[iy] - 0.5*ly)^2 -(zc[iz] - 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
+    H0    = Data.Array([2.0 * exp(-(xc[ix] - 0.5*lx)^2 -(yc[iy] - 0.5*ly)^2 -(zc[iz] - 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
     H     = @ones(nx, ny, nz) .* H0
     H2    = copy(H)
+
+    # Preparation of visualisation
+    gr()
+    ENV["GKSwstype"]="nul"
+    anim = Animation();
+    H_v = zeros(nx, ny, nz)
 
     println("Running in pseudo-time to steady-state")
     damp  = 1-4/nx          # damping (this is a tuning parameter, dependent on e.g. grid resolution)
@@ -54,8 +60,9 @@ end
         it += 1
 
         # Vizualise and calc error
-        if (it % nout == 0)  
-            display(heatmap(xc, yc, Array(H[:,:,nz÷2]), linewidth=3, label="H final", framestyle=:box, xlabel="lx", ylabel="ly", title="3D diffusion (iters=$it)"))
+        if (it % nout == 0)
+            H_v .= H
+            heatmap(transpose(H_v[:,:,nz÷2]), aspect_ratio=1); frame(anim)
             err = norm(ResH)/sqrt(length(nx))
         end
 
@@ -63,6 +70,7 @@ end
 
     if isnan(err) error("NaN") end
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it, nx, it)
+    gif(anim, "diffusion3D_xpu.gif", fps = 15)
     return xc, H
 end
 

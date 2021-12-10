@@ -2,7 +2,9 @@ using Printf, LinearAlgebra, Plots
 using ImplicitGlobalGrid
 import MPI
 
-const USE_GPU = false
+const USE_GPU = true
+# IF GPU: ~/.julia/bin/mpiexecjl -n 1 julia --project ./scripts-part1/diffusion3D_dual_steady_multixpu.jl 
+# IF CPU: ~/.julia/bin/mpiexecjl -n 12 julia --project ./scripts-part1/diffusion3D_dual_steady_multixpu.jl 
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
 @static if USE_GPU
@@ -24,7 +26,7 @@ end
     lx, ly, lz = 10.0, 10.0, 10.0 # domain size
     D     = 1.0                   # diffusion coefficient
     ttot  = 1.0                   # total simulation time
-    dt    = 0.2                   # physical time step
+    dt    = 0.02                  # physical time step
     # Numerics
     nx, ny, nz = 32, 32, 32
     tol        = 1e-8             # tolerance
@@ -47,15 +49,15 @@ end
     H     = Data.Array([2.0 * exp(-(x_g(ix,dx,H)- 0.5*lx)^2 -(y_g(iy,dy,H) - 0.5*ly)^2 -(z_g(iz,dz,H)- 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
     H2    = copy(H)
 
-      # Preparation of visualisation
-      gr()
-      ENV["GKSwstype"]="nul"
-      anim = Animation();
-      nx_v = (nx-2)*dims[1];
-      ny_v = (ny-2)*dims[2];
-      nz_v = (nz-2)*dims[3];
-      H_v  = zeros(nx_v, ny_v, nz_v);
-      H_nohalo = zeros(nx-2, ny-2, nz-2);
+    # Preparation of visualisation
+    gr()
+    ENV["GKSwstype"]="nul"
+    anim = Animation();
+    nx_v = (nx-2)*dims[1];
+    ny_v = (ny-2)*dims[2];
+    nz_v = (nz-2)*dims[3];
+    H_v  = zeros(nx_v, ny_v, nz_v);
+    H_nohalo = zeros(nx-2, ny-2, nz-2);
 
     println("Running in pseudo-time to steady-state")
     damp  = 1-4/nx          # damping (this is a tuning parameter, dependent on e.g. grid resolution)
@@ -69,10 +71,10 @@ end
             gather!(H_nohalo, H_v)                                                            # Gather data on process 0 (could be interpolated/sampled first)
             if (me==0) heatmap(transpose(H_v[:,:,nz_v÷2]), aspect_ratio=1);  frame(anim); end  # Visualize it on process 0.
         end
-        @hide_communication (16, 2, 2) begin
-            @parallel diffusion3D_step!(H2, H, ResH, dHdt, dHdt2, D, damp, dτ, dx, dy, dz)
-            update_halo!(H2);
-        end
+
+        @parallel diffusion3D_step!(H2, H, ResH, dHdt, dHdt2, D, damp, dτ, dx, dy, dz)
+        update_halo!(H2);
+
         H, H2 = H2, H
         dHdt, dHdt2 = dHdt2, dHdt
         it += 1
@@ -89,7 +91,7 @@ end
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it, nx, it)
 
     # Postprocessing
-    if (me==0) gif(anim, "diffusion3D.gif", fps = 15) end                                     # Create a gif movie on process 0.
+    if (me==0) gif(anim, "diffusion3D_multixpu.gif", fps = 15) end                                     # Create a gif movie on process 0.
     finalize_global_grid();
     return xc, H
 end
