@@ -13,8 +13,8 @@ using Plots, Statistics, LinearAlgebra
     # Derived numerics
     dx, dy, dz = Lx/nx, Ly/ny, Lz/nz
     xc, yc, zc = LinRange(dx/2, Lx-dx/2, nx), LinRange(dy/2, Ly-dy/2, ny), LinRange(dz/2, Lz-dz/2, nz)
-    dmp        = 1.0 - 2π/nx
-    dt         = 0.2
+    dmp        = 2π/nx^2
+    dt         = dx^2/4.1
 
     # Array initialisation
     H    = zeros(nx, ny, nz)
@@ -36,12 +36,12 @@ using Plots, Statistics, LinearAlgebra
 
     # Time loop
     it = 0; t = 0.0; err = 1.0
-    while err > epsi && t < ttot
+    while err > epsi
         qx         .= .-diff(H[:, 2:end-1, 2:end-1], dims=1)./dx
         qy         .= .-diff(H[2:end-1, :, 2:end-1], dims=2)./dy
         qz         .= .-diff(H[2:end-1, 2:end-1, :], dims=3)./dz
 
-        dHdt       .= .-(diff(qx, dims=1)./dx .+ diff(qy, dims=2)./dy .+ diff(qz, dims=3)./dz)
+        dHdt       .= ((1 -dmp) .* dHdt) .+ (diff(qx, dims=1)./dx .+ diff(qy, dims=2)./dy .+ diff(qz, dims=3)./dz)
         
         H[2:end-1, 2:end-1, 2:end-1] .= H[2:end-1, 2:end-1, 2:end-1] .+ dt .* dHdt
         
@@ -50,10 +50,14 @@ using Plots, Statistics, LinearAlgebra
         # calculate error
         ∆H = dt.*dHdt
         err = norm(∆H)/sqrt(length(∆H))
+
+        if err <= epsi 
+            break
+        end
         
         # Vizualization
         if it % nout == 0
-            opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(0.0, 0.5), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(t, sigdigits=3))s, it = $(it) err = $(round(err, sigdigits=3))")
+            opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(t, sigdigits=3))s, it = $(it) err = $(round(err, sigdigits=3))")
             display(heatmap(xc, yc, H[nx÷2,:,:]'; opts...))
         end
 
