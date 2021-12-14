@@ -67,10 +67,12 @@ end
             iter += 1
             if (iter % nout == 0)
                 H_v .= H
-                heatmap(xc, yc, H_v[:,:,nz÷2], aspect_ratio=1, label="H final", xlims=extrema(xc), ylims=extrema(yc), clims=extrema(H0), xlabel="lx", ylabel="H", title="linear diffusion (nt=$it, iters=$ittot)");frame(anim)
-                err = norm(ResH)/sqrt(length(nx))
+                opts = (aspect_ratio=1, xlims=extrema(xc), ylims=extrema(yc), clims=extrema(H0), xlabel="lx", ylabel="ly", title="3D Diffusion (nt=$it, iters=$iter)")                                        
+                heatmap(xc, yc, H_v[:,:,nz÷2]; opts...); frame(anim)
+                err = norm(ResH)/sqrt(length(ResH))
             end
         end
+        println(iter)
         ittot += iter; it += 1; t += dt
         Hold .= H
         if isnan(err) error("NaN") end
