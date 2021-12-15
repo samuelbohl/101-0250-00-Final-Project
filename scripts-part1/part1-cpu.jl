@@ -13,5 +13,3 @@ else
 end
 
 include("part1.jl")
-
-diffusion_2D(; do_visu=true)
