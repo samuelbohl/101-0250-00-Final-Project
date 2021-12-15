@@ -30,7 +30,7 @@ using Plots
     for it = 1:nt
         τxx   .= τxx .+ dt*(2.0.*μ.*(diff(Vx,dims=1)/dx .- 1/3 .*∇V))
         τyy   .= τyy .+ dt*(2.0.*μ.*(diff(Vy,dims=2)/dy .- 1/3 .*∇V))
-        τxy   .= τxy .+ dt*(0.5.*(diff(Vx[2:end-1,:],dims=2)/dy .+ diff(Vy[:,2:end-1],dims=1)/dx))
+        τxy   .= τxy .+ dt*(μ.*(diff(Vx[2:end-1,:],dims=2)/dy .+ diff(Vy[:,2:end-1],dims=1)/dx))
         dVxdt .= .-1.0./ρ.*(diff(P[:,2:end-1],dims=1)./dx .- diff(τxx[:,2:end-1],dims=1)./dx .- diff(τxy,dims=2)./dy)
         dVydt .= .-1.0./ρ.*(diff(P[2:end-1,:],dims=2)./dy .- diff(τyy[2:end-1,:],dims=2)./dy .- diff(τxy,dims=1)./dx)
         Vx[2:end-1,2:end-1] .= Vx[2:end-1,2:end-1] .+ dt.*dVxdt
