@@ -1,6 +1,9 @@
 using Printf, LinearAlgebra, Plots
 
 @views inn(A) = A[2:end-1,2:end-1,2:end-1]
+@views d2_xi(A) = diff(diff(A[:,2:end-1,2:end-1], dims=1), dims=1)
+@views d2_yi(A) = diff(diff(A[2:end-1,:,2:end-1], dims=2), dims=2)
+@views d2_zi(A) = diff(diff(A[2:end-1,2:end-1,:], dims=3), dims=3)
 
 @views function diffusion_3D(;steady=false)
     # Physics
@@ -47,10 +50,7 @@ using Printf, LinearAlgebra, Plots
             iter = 0; err = 2*tol
             # Pseudo-transient iteration
             while err>tol && iter<itMax
-                qHx        .= D.*diff(H[:, 2:end-1, 2:end-1], dims=1)./dx
-                qHy        .= D.*diff(H[2:end-1, :, 2:end-1], dims=2)./dy
-                qHz        .= D.*diff(H[2:end-1, 2:end-1, :], dims=3)./dz
-                ResH       .= .-(inn(H) .- inn(Hold))./dt .+ (diff(qHx, dims=1)./dx .+ diff(qHy, dims=2)./dy .+ diff(qHz, dims=3)./dz)
+                ResH       .= .-(inn(H) .- inn(Hold))./dt .+ D.*(d2_xi(H)./dx^2 .+ d2_yi(H)./dy^2 .+ d2_zi(H)./dz^2)
                 dHdt       .= ResH   .+ damp .* dHdt
                 H[2:end-1,2:end-1,2:end-1] .= inn(H) .+ dtau .* dHdt
                 iter += 1; if (iter % nout == 0)  err = norm(ResH)/sqrt(length(nx))  end

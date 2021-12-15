@@ -13,13 +13,24 @@ else
     @init_parallel_stencil(Threads, Float64, 3);
 end
 
-@parallel function diffusion3D_step!(H2, H, Hold, ResH, dHdt, dHdt2, D, damp, dt, dτ, dx, dy, dz)
+@views inn(A) = A[2:end-1,2:end-1,2:end-1]
+
+@parallel function compute_ResH!(H, Hold, ResH, D, dt, dx, dy, dz)
     @all(ResH)  = -(@inn(H) - @inn(Hold))/dt + (D*(@d2_xi(H)/dx^2 + @d2_yi(H)/dy^2 + @d2_zi(H)/dz^2))
-    @all(dHdt2) = @all(ResH) + damp * @all(dHdt)
-    @inn(H2)    = @inn(H) + dτ * @all(dHdt2)
     return
 end
 
+@parallel function compute_dHdt!(ResH, dHdt, dHdt2, damp)
+    @all(dHdt2) = @all(ResH) + damp * @all(dHdt)
+    return
+end
+
+@parallel function compute_H!(H2, H, dHdt, dτ)
+    @inn(H2)    = @inn(H) + dτ * @all(dHdt)
+    return
+end
+
+norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WORLD)))
 
 
 @views function diffusion_3D()
@@ -29,37 +40,40 @@ end
     ttot  = 1.0                   # total simulation time
     dt    = 0.2                   # physical time step
     # Numerics
-    nx, ny, nz = 34, 34, 34
+    nx, ny, nz = 32, 32, 32
     tol        = 1e-8             # tolerance
     itMax      = 1e5              # max number of iterations
     nout       = 10               # tol check
     # Derived numerics    
-    dx, dy, dz = lx/nx, ly/ny, lz/nz             # cell sizes
-    me, dims   = init_global_grid(nx, ny, nz);
-    dx         = lx/(nx_g()-2);                              # Space step in x-dimension
-    dy         = ly/(ny_g()-2);                              # Space step in y-dimension
-    dz         = lz/(nz_g()-2);                              # Space step in z-dimension
-    dτ         = (1.0/(dx^2/D/6.1) + 1.0/dt)^-1 # iterative timestep
-    xc, yc, zc = LinRange(dx/2, lx-dx/2, nx-2), LinRange(dy/2, ly-dy/2, ny), LinRange(dz/2, lz-dz/2, nz)
+    me, dims   = init_global_grid(nx, ny, nz)
+    dx         = lx/(nx_g());                              # Space step in x-dimension
+    dy         = ly/(ny_g());                              # Space step in y-dimension
+    dz         = lz/(nz_g());                              # Space step in z-dimension
+    dτ         = (1.0/(dx^2/D/6.1) + 1.0/dt)^-1            # iterative timestep
+
     # Array allocation
     dHdt  = @zeros(nx-2, ny-2, nz-2)
     dHdt2 = copy(dHdt)
     ResH  = @zeros(nx-2, ny-2, nz-2)
     # Initial condition
     H     = @zeros(nx, ny, nz)
-    H     = Data.Array([2.0 * exp(-(x_g(ix,dx,H)- 0.5*lx)^2 -(y_g(iy,dy,H) - 0.5*ly)^2 -(z_g(iz,dz,H)- 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
+    H0    = Data.Array([2.0 * exp(-(dx/2 + x_g(ix,dx,H)- 0.5*lx)^2 -(dy/2 + y_g(iy,dy,H) - 0.5*ly)^2 -(dz/2 + z_g(iz,dz,H)- 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
+    H     = copy(H0)
     H2    = copy(H)
     Hold  = copy(H)
 
     # Preparation of visualisation
     gr()
     ENV["GKSwstype"]="nul"
-    anim = Animation();
-    nx_v = (nx-2)*dims[1];
-    ny_v = (ny-2)*dims[2];
-    nz_v = (nz-2)*dims[3];
-    H_v  = zeros(nx_v, ny_v, nz_v);
-    H_nohalo = zeros(nx-2, ny-2, nz-2);
+    anim = Animation()
+    xc   = LinRange(dx/2, lx-dx/2, nx_g()) 
+    yc   = LinRange(dy/2, ly-dy/2, ny_g())
+    nx_v = (nx-2)*dims[1]
+    ny_v = (ny-2)*dims[2]
+    nz_v = (nz-2)*dims[3]
+    H_v  = zeros(nx_v, ny_v, nz_v)
+    H_nohalo = zeros(nx-2, ny-2, nz-2)
+    
 
     t = 0.0; it = 0; ittot = 0
 
@@ -70,19 +84,23 @@ end
         err = 2*tol
         # Pseudo-transient iteration
         while err>tol && iter<itMax
-            
-            @parallel diffusion3D_step!(H2, H, Hold, ResH, dHdt, dHdt2, D, damp, dt, dτ, dx, dy, dz)
-            update_halo!(H2);
-            H, H2 = H2, H
+
+            @parallel compute_ResH!(H, Hold, ResH, D, dt, dx, dy, dz)
+            @parallel compute_dHdt!(ResH, dHdt, dHdt2, damp)
             dHdt, dHdt2 = dHdt2, dHdt
+            @parallel compute_H!(H2, H, dHdt, dτ)
+            update_halo!(H2)
+            H, H2 = H2, H
             
             # Vizualise and calc error
             iter += 1
             if iter % nout == 0
-                err = norm(ResH)/sqrt(length(nx))
-                H_nohalo .= H[2:end-1,2:end-1,2:end-1];                                           # Copy data to CPU removing the halo.
+                err = norm_g(ResH)/sqrt(length(ResH))
+
+                H_nohalo .= H[2:end-1,2:end-1,2:end-1]                                            # Copy data to CPU removing the halo.
                 gather!(H_nohalo, H_v)                                                            # Gather data on process 0 (could be interpolated/sampled first)
-                if (me==0) heatmap(H_v[:,:,nz÷2], aspect_ratio=1, label="H final", xlims=extrema(xc), ylims=extrema(yc), clims=extrema(H_v), xlabel="lx", ylabel="H", title="linear diffusion (nt=$it, iters=$ittot)");frame(anim); end  # Visualize it on process 0.
+                opts = (aspect_ratio=1, xlims=extrema(xc), ylims=extrema(yc), clims=extrema(H0), xlabel="lx", ylabel="ly", title="linear diffusion (nt=$it, iters=$iter)")                                        
+                if (me==0) heatmap(xc[2:end-1], yc[2:end-1], H_v[:,:,nz_v÷2]; opts...); frame(anim) end               # Visualize it on process 0.
             end
         end
         ittot += iter; it += 1; t += dt
@@ -92,10 +110,10 @@ end
 
     @printf("Total time = %1.2f, time steps = %d, nx = %d, iterations tot = %d \n", round(ttot, sigdigits=3), it, nx, ittot)
 
-    # Postprocessing
+    # Postprocessing 
     if (me==0) gif(anim, "diffusion3D_multixpu.gif", fps = 15) end                                     # Create a gif movie on process 0.
     finalize_global_grid();
-    return xc, H_v
-end
 
-xc, H = diffusion_3D()
+
+    return xc, Array(H)
+end
