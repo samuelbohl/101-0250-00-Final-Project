@@ -2,7 +2,9 @@
 
 #include("../scripts-part1/part1.jl") # modify to include the correct script
 
-include("../scripts-part1/diffusion3D_dual_steady_xpu.jl")
+include("../scripts-part1/diffusion3D_multixpu.jl")
+
+xc, H = diffusion_3D()
 
 # Add unit and reference tests
 
