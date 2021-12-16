@@ -131,7 +131,7 @@ end
 ### Hardware
 
 The hardware used to perform all simultaions and scaling experiments:
-  - CPU: Intel i7-11700 (Max. Memory Bandwidth	50 GB/s)
+  - CPU: Intel i7-11700 (Max. Memory Bandwidth	50 GB/s, 8Cores and 16 Threads)
   - GPU: NVIDIA GeForce RTX 3060 (Max. Memory Bandwidth	360 GB/s)
 
 Except for the Multi GPU Experiment, where we used:
@@ -149,10 +149,34 @@ Report an animation of the 3D solution here and provide and concise description 
 Briefly elaborate on performance measurement and assess whether you are compute or memory bound for the given physics on the targeted hardware.
 
 #### Memory throughput
-Strong-scaling on CPU and GPU -> optimal "local" problem sizes.
+
+To get the optimal local problem sizes, we perform a strong-scaling experiment on a CPU (Intel i7-11700, as described earlier) and a GPU (RTX 3060, as described earlier). For the CPU scaling, we executed the `scaling_experiment_xpu_perf_cpu.jl` 4 times, with 1, 4, 8 and 16 threads respectively. The GPU scaling experiment was done using the `scaling_experiment_xpu_perf_gpu.jl`script. Below every plot you will find the command used to generate the graphic. 
+
+![E1](img/diffusion3D_xpu_perf_scaling_experiment_cpu_1threads.png)
+
+Executed with `julia -t 1 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+
+![E2](img/diffusion3D_xpu_perf_scaling_experiment_cpu_4threads.png)
+
+Executed with `julia -t 4 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+
+![E3](img/diffusion3D_xpu_perf_scaling_experiment_cpu_8threads.png)
+
+Executed with `julia -t 8 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+
+![E4](img/diffusion3D_xpu_perf_scaling_experiment_cpu_16threads.png)
+
+Executed with `julia -t 16 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+
+![E5](img/diffusion3D_xpu_perf_scaling_experiment_gpu.png)
+
+Executed with `julia ./scripts-part1/scaling_experiment_xpu_perf_gpu.jl`.
+
+The optimal local problem/grid size seems to be going from 32 to 64 when increasing the number of Threads on the CPU. For the GPU 128 is clearly the optimal problem size.
+
 
 #### Weak scaling
-Multi-GPU weak scaling
+Now that we have the optimal local problem size for a GPU, we will run a week scaling experiment using multiple GPUs. (all Titan X)
 
 #### Work-precision diagrams
 Provide a figure depicting convergence upon grid refinement; report the evolution of a value from the quantity you are diffusing for a specific location in the domain as function of numerical grid resolution. Potentially compare against analytical solution.
