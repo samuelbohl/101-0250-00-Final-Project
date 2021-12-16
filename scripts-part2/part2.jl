@@ -46,9 +46,9 @@ end
     ρ          = 1.0
     μ          = 1.0
     K          = 1.0
-    ttot       = 20.0
+    ttot       = 1.0
     # Numerics
-    nx, ny, nz = 64, 65, 66
+    nx, ny, nz = 32, 32, 32
     nout       = 1
     # Derived numerics
     dx, dy, dz = Lx/nx, Ly/ny, Lz,nz
@@ -85,7 +85,7 @@ end
             display(heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...))
         end
     end
-    return
+    return xc, P
 end
 
-elastic_wave_3D()
+xc, P = elastic_wave_3D()
