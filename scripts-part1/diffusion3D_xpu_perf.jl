@@ -1,8 +1,12 @@
 using Printf, LinearAlgebra, Plots
 
-const USE_GPU = true
+if !@isdefined USE_GPU
+    const USE_GPU = false
+end
+
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
+ParallelStencil.@reset_parallel_stencil()
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
@@ -26,7 +30,7 @@ end
 end
 
 
-@views function diffusion_3D()
+@views function diffusion_3D(;grid=(32,32,32), is_experiment=false)
     # Physics
     lx, ly, lz = 10.0, 10.0, 10.0 # domain size
     D     = 1.0                   # diffusion coefficient
@@ -34,9 +38,9 @@ end
     dt    = 0.2                   # physical time step
 
     # Numerics
-    nx, ny, nz = 32, 32, 32
+    nx, ny, nz = grid
     tol        = 1e-8             # tolerance
-    itMax      = 1e5              # max number of iterations
+    itMax      = 1e4/(nx*4)       # max number of iterations
     nout       = 10               # tol check
 
     # Derived numerics    
@@ -102,9 +106,9 @@ end
     println("time(sec)=$t_toc T_eff=$T_eff")
 
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it, nx, it)
+
+    if is_experiment
+        return T_eff
+    end
     return xc, Array(H)
 end
-
-xc, H = diffusion_3D()
-
-print("Done")
