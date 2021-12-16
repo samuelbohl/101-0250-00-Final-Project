@@ -19,8 +19,8 @@ end
 
 @views inn(A) = A[2:end-1,2:end-1,2:end-1]
 
-@parallel function compute_ResH!(H, Hold, ResH, _dt, D_dx², D_dy², D_dz²)
-    @all(ResH) = -(@inn(H) - @inn(Hold)) * _dt + (@d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²)
+@parallel function compute_ResH!(H, Hᵗ, ResH, _dt, D_dx², D_dy², D_dz²)
+    @all(ResH) = -(@inn(H) - @inn(Hᵗ)) * _dt + (@d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²)
     return
 end
 
@@ -69,20 +69,7 @@ norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WO
     H     = copy(H0)
     H2    = copy(H)
     Hᵗ    = copy(H)
-
-    # Preparation of visualisation
-    gr()
-    ENV["GKSwstype"]="nul"
-    anim = Animation()
-    xc   = LinRange(dx/2, lx-dx/2, nx_g()) 
-    yc   = LinRange(dy/2, ly-dy/2, ny_g())
-    nx_v = (nx-2)*dims[1]
-    ny_v = (ny-2)*dims[2]
-    nz_v = (nz-2)*dims[3]
-    H_v  = zeros(nx_v, ny_v, nz_v)
-    H_nohalo = zeros(nx-2, ny-2, nz-2)
     
-
     t_tic = 0.0;t = 0.0; it = 0; ittot = 0
 
     damp  = 1-29/nx          # damping (this is a tuning parameter, dependent on e.g. grid resolution)
@@ -109,11 +96,6 @@ norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WO
             iter += 1
             if iter % nout == 0
                 err = norm_g(ResH)/sqrt(length(ResH))
-
-                H_nohalo .= H[2:end-1,2:end-1,2:end-1]                                            # Copy data to CPU removing the halo.
-                gather!(H_nohalo, H_v)                                                            # Gather data on process 0 (could be interpolated/sampled first)
-                opts = (aspect_ratio=1, xlims=extrema(xc), ylims=extrema(yc), clims=extrema(Array(H0)), xlabel="lx", ylabel="ly", title="linear diffusion (nt=$it, iters=$iter)")                                        
-                if (me==0) heatmap(xc[2:end-1], yc[2:end-1], H_v[:,:,nz_v÷2]; opts...); frame(anim) end               # Visualize it on process 0.
             end
         end
         ittot += iter; it += 1; t += dt
@@ -131,11 +113,10 @@ norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WO
     @printf("Total time = %1.2f, time steps = %d, nx = %d, iterations tot = %d \n", round(ttot, sigdigits=3), it, nx, ittot)
 
     # Postprocessing 
-    if (me==0) gif(anim, "diffusion3D_multixpu.gif", fps = 15) end                                     # Create a gif movie on process 0.
     finalize_global_grid()
 
     if is_experiment
-        return nprocs, T_eff
+        return T_eff
     end
     return xc, Array(H)
 end
