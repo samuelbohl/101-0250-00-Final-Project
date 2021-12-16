@@ -6,7 +6,7 @@ end
 
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
-ParallelStencil.@reset_parallel_stencil()
+#ParallelStencil.@reset_parallel_stencil()
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
