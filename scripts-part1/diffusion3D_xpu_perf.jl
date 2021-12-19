@@ -40,7 +40,11 @@ end
     # Numerics
     nx, ny, nz = grid
     tol        = 1e-8             # tolerance
-    itMax      = 1e4/(nx*4)       # max number of iterations
+    itMax      = 1e4              # max number of iterations
+    if is_experiment              # we want to shorten the number of max iterations based on grid size durch the scaling experiments
+        itMax  = 1e4/(nx*4)
+    end
+    
     nout       = 10               # tol check
 
     # Derived numerics    
