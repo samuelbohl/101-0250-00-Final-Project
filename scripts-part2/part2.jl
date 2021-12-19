@@ -30,6 +30,10 @@ end
     @inn(Vx) = @inn(Vx) + dt*@all(dVxdt)
     @inn(Vy) = @inn(Vy) + dt*@all(dVydt)
     @inn(Vz) = @inn(Vz) + dt*@all(dVzdt)
+    return
+end
+
+@parallel function compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
     @all(∇V) = @d_xa(Vx)/dx + @d_ya(Vy)/dy + @d_za(Vz)/dz
     return
 end
@@ -79,6 +83,7 @@ end
         @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, dx, dy, dz)
         @parallel compute_dV!(P, dVxdt, dVydt, dVzdt, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dx, dy, dz)
         @parallel compute_V!(Vx, Vy, Vz, ∇V, dVxdt, dVydt, dVzdt, dt, dx, dy, dz)
+        @parallel compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
         @parallel compute_P!(P, dPdt, ∇V, K, dt)
         if it % nout == 0
             opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.15, 0.65), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
