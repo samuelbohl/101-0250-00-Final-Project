@@ -87,7 +87,7 @@ end
         @parallel compute_P!(P, dPdt, ∇V, K, dt)
         if it % nout == 0
             opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.15, 0.65), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
-            display(heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...))
+            #display(heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...))
         end
     end
     return xc, P
