@@ -85,6 +85,12 @@ Runs the 3D elastic wave simulation\\
     τyz = @zeros(nx-2,ny-1,nz-1)
     τzx = @zeros(nx-1,ny-2,nz-1)
 
+    # Benchmark variables
+    @static if BENCHMARK
+        warmup = 10     # Number of warmup-iterations
+        t_tic  = 0.0    # Holds start time
+    end
+
     # Animation object for visualization
     @static if VISUALIZE
         anim = Animation()
@@ -98,12 +104,32 @@ Runs the 3D elastic wave simulation\\
         @parallel compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
         @parallel compute_P!(P, dPdt, ∇V, K, dt)
 
+        # Start the clock after warmup-iterations
+        @static if BENCHMARK
+            if (it == warmup+1)
+                t_tic = Base.time();
+            end
+        end
+
         # Render a slice of the 3D pressure-map and save as an animation frame
         @static if VISUALIZE
             opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.15, 0.65), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
             heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...)
             frame(anim)
         end
+    end
+
+    # Calculate performance
+    @static if BENCHMARK
+        t_toc = Base.time() - t_tic                 # Stop the clock
+        A_eff = 1e-9 * sizeof(Float64) * (          # Effective main memory access per iteration [GB]
+              2 * (length(τxx) + length(τyy) + length(τzz) + length(τxy) + length(τyz) + length(τzx))
+            + 2 * (length(Vx)  + length(Vy)  + length(Vz))
+            + 2 * (length(P))
+        )
+        t_it  = t_toc/(nt-warmup)                   # Execution time per iteration [s]
+        T_eff = A_eff/t_it                          # Effective memory throughput [GB/s]
+        println("t=$t_toc s, T_eff=$T_eff GB/s")
     end
 
     # Save the animation as a GIF
