@@ -143,7 +143,13 @@ Results section
 ### 3D diffusion
 Report an animation of the 3D solution here and provide and concise description of the results. _Unleash your creativity to enhance the visual output._
 
+**Dual Time Solution with grid size 32x32x32 - slice at z=16 - using CPU**
+
 ![3DDiffusion](img/diffusion3D_xpu.gif)
+
+**Dual Time Solution with grid size 512x512x256 - slice at z=128 - using 4 Titan X**
+
+![3DDiffusion](img/diffusion3D_multixpu.gif)
 
 ### Performance
 Briefly elaborate on performance measurement and assess whether you are compute or memory bound for the given physics on the targeted hardware.
