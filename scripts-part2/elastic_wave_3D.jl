@@ -47,10 +47,9 @@ Runs the 3D elastic wave simulation\\
 `elastic_wave_3D(res, ttot, do_vis) -> xc, P`\\
     `res`    (Int)     : xyz-resolutions of the simulation\\
     `ttot`   (Float64) : total simulation time\\
-    `do_vis` (Bool)    : whether or not to visualise the simulation\\
     `xc` and `P` are returned for testing purposes
 """
-@views function elastic_wave_3D(res::Int, ttot::Float64, do_vis::Bool)
+@views function elastic_wave_3D(res::Int, ttot::Float64)
     # Physics
     Lx, Ly, Lz = 10.0, 10.0, 10.0
     ρ          = 1.0
@@ -59,7 +58,6 @@ Runs the 3D elastic wave simulation\\
 
     # Numerics
     nx, ny, nz = res, res, res
-    nout       = 1
 
     # Derived numerics
     dx, dy, dz = Lx/nx, Ly/ny, Lz,nz
@@ -87,6 +85,11 @@ Runs the 3D elastic wave simulation\\
     τyz = @zeros(nx-2,ny-1,nz-1)
     τzx = @zeros(nx-1,ny-2,nz-1)
 
+    # Animation object for visualization
+    @static if VISUALIZE
+        anim = Animation()
+    end
+
     # Time loop
     for it = 1:nt
         @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, dx, dy, dz)
@@ -94,10 +97,19 @@ Runs the 3D elastic wave simulation\\
         @parallel compute_V!(Vx, Vy, Vz, ∇V, dVxdt, dVydt, dVzdt, dt, dx, dy, dz)
         @parallel compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
         @parallel compute_P!(P, dPdt, ∇V, K, dt)
-        if do_vis && it % nout == 0
+
+        # Render a slice of the 3D pressure-map and save as an animation frame
+        @static if VISUALIZE
             opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.15, 0.65), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
-            display(heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...))
+            heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...)
+            frame(anim)
         end
     end
+
+    # Save the animation as a GIF
+    @static if VISUALIZE
+        gif(anim, "renders/elastic_wave_3D_$res.gif", fps=30)
+    end
+
     return xc, P
 end
