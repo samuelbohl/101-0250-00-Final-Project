@@ -150,27 +150,27 @@ Briefly elaborate on performance measurement and assess whether you are compute 
 
 #### Memory throughput
 
-To get the optimal local problem sizes, we perform a strong-scaling experiment on a CPU (Intel i7-11700, as described earlier) and a GPU (RTX 3060, as described earlier). For the CPU scaling, we executed the `scaling_experiment_xpu_perf_cpu.jl` 4 times, with 1, 4, 8 and 16 threads respectively. The GPU scaling experiment was done using the `scaling_experiment_xpu_perf_gpu.jl`script. Below every plot you will find the command used to generate the graphic. 
+To get the optimal local problem sizes, we perform a strong-scaling experiment on a CPU (Intel i7-11700, as described earlier) and a GPU (RTX 3060, as described earlier). For the CPU scaling, we executed the `scaling_experiment_cpu.jl` 4 times, with 1, 4, 8 and 16 threads respectively. The GPU scaling experiment was done using the `scaling_experiment_gpu.jl`script. Below every plot you will find the command used to generate the graphic. 
 
 ![E1](img/diffusion3D_xpu_perf_scaling_experiment_cpu_1threads.png)
 
-Executed with `julia -t 1 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+Executed with `julia -t 1 ./scripts-part1/scaling_experiment_cpu.jl`.
 
 ![E2](img/diffusion3D_xpu_perf_scaling_experiment_cpu_4threads.png)
 
-Executed with `julia -t 4 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+Executed with `julia -t 4 ./scripts-part1/scaling_experiment_cpu.jl`.
 
 ![E3](img/diffusion3D_xpu_perf_scaling_experiment_cpu_8threads.png)
 
-Executed with `julia -t 8 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+Executed with `julia -t 8 ./scripts-part1/scaling_experiment_cpu.jl`.
 
 ![E4](img/diffusion3D_xpu_perf_scaling_experiment_cpu_16threads.png)
 
-Executed with `julia -t 16 ./scripts-part1/scaling_experiment_xpu_perf_cpu.jl`.
+Executed with `julia -t 16 ./scripts-part1/scaling_experiment_cpu.jl`.
 
 ![E5](img/diffusion3D_xpu_perf_scaling_experiment_gpu.png)
 
-Executed with `julia ./scripts-part1/scaling_experiment_xpu_perf_gpu.jl`.
+Executed with `julia ./scripts-part1/scaling_experiment_gpu.jl`.
 
 The optimal local problem/grid size seems to be going from 32 to 64 when increasing the number of Threads on the CPU. For the GPU 128 is clearly the optimal problem size.
 
