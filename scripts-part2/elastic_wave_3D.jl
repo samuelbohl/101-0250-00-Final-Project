@@ -17,17 +17,12 @@ using Plots
     return
 end
 
-@parallel function compute_dV!(P, dVxdt, dVydt, dVzdt, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dx, dy, dz)
-    @all(dVxdt) = -1.0/ρ*(@d_xi(P)/dx - @d_xa(τxx)/dx - @d_ya(τxy)/dy - @d_za(τzx)/dz) 
-    @all(dVydt) = -1.0/ρ*(@d_yi(P)/dy - @d_ya(τyy)/dy - @d_za(τyz)/dz - @d_xa(τxy)/dx)
-    @all(dVzdt) = -1.0/ρ*(@d_zi(P)/dz - @d_za(τzz)/dz - @d_xa(τzx)/dx - @d_ya(τyz)/dy)
-    return
-end
-
-@parallel function compute_V!(Vx, Vy, Vz, ∇V, dVxdt, dVydt, dVzdt, dt, dx, dy, dz)
-    @inn(Vx) = @inn(Vx) + dt*@all(dVxdt)
-    @inn(Vy) = @inn(Vy) + dt*@all(dVydt)
-    @inn(Vz) = @inn(Vz) + dt*@all(dVzdt)
+@parallel function compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dt, dx, dy, dz)
+	# dVxdt = -1/ρ*(@d_xi(P)/dx - @d_xa(τxx)/dx - @d_ya(τxy)/dy - @d_za(τzx)/dz)
+	# Vx    = Vx + dt*dVxdt
+    @inn(Vx) = @inn(Vx) - dt/ρ*(@d_xi(P)/dx - @d_xa(τxx)/dx - @d_ya(τxy)/dy - @d_za(τzx)/dz)
+    @inn(Vy) = @inn(Vy) - dt/ρ*(@d_yi(P)/dy - @d_ya(τyy)/dy - @d_za(τyz)/dz - @d_xa(τxy)/dx)
+    @inn(Vz) = @inn(Vz) - dt/ρ*(@d_zi(P)/dz - @d_za(τzz)/dz - @d_xa(τzx)/dx - @d_ya(τyz)/dy)
     return
 end
 
@@ -36,9 +31,10 @@ end
     return
 end
 
-@parallel function compute_P!(P, dPdt, ∇V, K, dt)
-    @all(dPdt) = -K*@all(∇V)
-    @all(P) = @all(P) + dt*@all(dPdt)
+@parallel function compute_P!(P, ∇V, K, dt)
+	# dPdt = -K*∇V
+	# P    = P + dt*dPdt
+    @all(P) = @all(P) - dt*K*@all(∇V)
     return
 end
 
@@ -66,18 +62,11 @@ Runs the 3D elastic wave simulation\\
     xc, yc, zc = LinRange(dx/2, Lx-dx/2, nx), LinRange(dy/2, Ly-dy/2, ny), LinRange(dz/2, Lz-dz/2, nz)
 
     # Array initialisation
-    P      = exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc])
-    dPdt   = @zeros(nx, ny, nz)
-
-    Vx = @zeros(nx+1,ny  ,nz  )
-    Vy = @zeros(nx  ,ny+1,nz  )
-    Vz = @zeros(nx  ,ny  ,nz+1)
-    ∇V = @zeros(nx  ,ny  ,nz  )
-    
-    dVxdt = @zeros(nx-1, ny-2, nz-2)
-    dVydt = @zeros(nx-2, ny-1, nz-2)
-    dVzdt = @zeros(nx-2, ny-2, nz-1)
-
+    P   = exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc])
+    Vx  = @zeros(nx+1,ny  ,nz  )
+    Vy  = @zeros(nx  ,ny+1,nz  )
+    Vz  = @zeros(nx  ,ny  ,nz+1)
+    ∇V  = @zeros(nx  ,ny  ,nz  )
     τxx = @zeros(nx  ,ny-2,nz-2)
     τyy = @zeros(nx-2,ny  ,nz-2)
     τzz = @zeros(nx-2,ny-2,nz  )
@@ -99,10 +88,9 @@ Runs the 3D elastic wave simulation\\
     # Time loop
     for it = 1:nt
         @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, dx, dy, dz)
-        @parallel compute_dV!(P, dVxdt, dVydt, dVzdt, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dx, dy, dz)
-        @parallel compute_V!(Vx, Vy, Vz, ∇V, dVxdt, dVydt, dVzdt, dt, dx, dy, dz)
+        @parallel compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dt, dx, dy, dz)
         @parallel compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
-        @parallel compute_P!(P, dPdt, ∇V, K, dt)
+        @parallel compute_P!(P, ∇V, K, dt)
 
         # Start the clock after warmup-iterations
         @static if BENCHMARK
