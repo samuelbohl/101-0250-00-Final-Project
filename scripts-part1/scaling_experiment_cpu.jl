@@ -13,7 +13,7 @@ grid_sizes = 16 * 2 .^ (1:5)
 # Array allocation
 T_effs = zeros(5)
 
-# Scaling experimetn loop
+# Scaling experiment loop
 for it = 1:5
     T_effs[it] = diffusion_3D(grid_sizes[it])
 end
