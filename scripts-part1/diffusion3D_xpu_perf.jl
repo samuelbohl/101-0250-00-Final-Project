@@ -86,7 +86,7 @@ Runs the 3D dualtime diffusion simulation\\
     @static if BENCHMARK
         warmup = 10         # Number of warmup-iterations
         t_tic  = 0.0        # Holds start time
-        itMax  = 1e4/(nx*4) # scale max number of iterations down my grid size
+        itMax  = 1e4/nx     # scale max number of iterations down my grid size
     end
 
     # Animation object for visualization
