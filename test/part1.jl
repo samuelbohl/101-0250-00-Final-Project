@@ -2,9 +2,14 @@
 
 #include("../scripts-part1/part1.jl") # modify to include the correct script
 
+const USE_GPU = false
+const BENCHMARK = false
+const VISUALIZE = false
+
 include("../scripts-part1/diffusion3D_xpu_perf.jl")
 
-xc, H = diffusion_3D()
+
+xc, H = diffusion_3D(32)
 
 # Add unit and reference tests
 

@@ -1,5 +1,7 @@
-# julia ./scripts-part1/scaling_experiment_xpu_perf_gpu.jl
+# julia ./scripts-part1/scaling_experiment_gpu.jl
 const USE_GPU = true
+const BENCHMARK = true
+const VISUALIZE = false
 include("./diffusion3D_xpu_perf.jl")
 
 # Grid sizes for the scaling experiment
@@ -10,8 +12,7 @@ T_effs = zeros(5)
 
 # Scaling experiment loop
 for it = 1:5
-    grid_tuple = grid_sizes[it], grid_sizes[it], grid_sizes[it]
-    T_effs[it] = diffusion_3D(;grid=grid_tuple, is_experiment=true)
+    T_effs[it] = diffusion_3D(grid_sizes[it])
 end
 
 # Visualization of Results

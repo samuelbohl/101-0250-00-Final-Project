@@ -2,15 +2,13 @@ using Printf, LinearAlgebra, Plots
 using ImplicitGlobalGrid
 import MPI
 
-# IF GPU: ~/.julia/bin/mpiexecjl -n 1 julia --project ./scripts-part1/diffusion3D_dual_steady_multixpu.jl 
-# IF CPU: ~/.julia/bin/mpiexecjl -n 12 julia --project ./scripts-part1/diffusion3D_dual_steady_multixpu.jl 
+# ~/.julia/bin/mpiexecjl -n 1 julia --project ./scripts-part1/diffusion3D_multixpu_perf.jl 
 if !@isdefined USE_GPU
     const USE_GPU = false
 end
 
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
-#ParallelStencil.@reset_parallel_stencil()
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
@@ -48,8 +46,14 @@ norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WO
     tol        = 1e-8             # tolerance
     itMax      = 1e5              # max number of iterations
     nout       = 10               # tol check
-    # Derived numerics    
+
+    # Initialize MPI
     me, dims, nprocs = init_global_grid(nx, ny, nz)
+    @static if USE_GPU
+        select_device()
+    end
+
+    # Derived numerics    
     dx         = lx/(nx_g());                              # Space step in x-dimension
     dy         = ly/(ny_g());                              # Space step in y-dimension
     dz         = lz/(nz_g());                              # Space step in z-dimension
