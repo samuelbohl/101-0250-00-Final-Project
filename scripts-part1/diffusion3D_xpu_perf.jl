@@ -101,6 +101,7 @@ Runs the 3D dualtime diffusion simulation\\
     # Animation object for visualization
     @static if VISUALIZE
         gr()
+        ENV["GKSwstype"] = "nul"
         anim = Animation()
         H_v = zeros(nx, ny, nz)
         init_extrema = extrema(H)
@@ -181,7 +182,7 @@ Runs the 3D dualtime diffusion simulation\\
             @parallel compute_H!(H2, H, dHdt, dτ)
             H, H2 = H2, H # Pointer Swap
 
-            # Calculate L2 norm
+            # Calculate L2 norm (error)
             if (it_τ % nout == 0)
                 err = norm(ResH)/sqrt(length(ResH))
             end
