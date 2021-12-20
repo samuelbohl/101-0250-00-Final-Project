@@ -25,4 +25,4 @@ num_threads = Threads.nthreads()
 
 plot(grid_sizes, max_bandwith .* ones(5), label="Theoretical Max Bandwidth")
 plot!(grid_sizes, T_effs, xlabel="cbrt(grid size)", ylabel="T_eff GB/s", title="CPU Scaling Experiment $(num_threads) Thread(s)", label="diffusion3D_xpu_perf.jl")
-png("$(@__DIR__)/../docs/img/diffusion3D_xpu_perf_scaling_experiment_cpu_$(num_threads)threads")
+png("$(@__DIR__)/../docs/img/diffusion3D_scaling_experiment_cpu_$(num_threads)threads")
