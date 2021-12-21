@@ -7,27 +7,27 @@ else
 end
 using Plots
 
-@parallel function compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, dx, dy, dz)
-    @all(τxx) = @all(τxx) + dt*(2.0*μ*(@d_xi(Vx)/dx) - 1.0/3.0*@inn_yz(∇V))
-    @all(τyy) = @all(τyy) + dt*(2.0*μ*(@d_yi(Vy)/dy) - 1.0/3.0*@inn_xz(∇V))
-    @all(τzz) = @all(τzz) + dt*(2.0*μ*(@d_zi(Vz)/dz) - 1.0/3.0*@inn_xy(∇V))
-    @all(τxy) = @all(τxy) + dt*μ*(@d_yi(Vx)/dy + @d_xi(Vy)/dx)
-    @all(τyz) = @all(τyz) + dt*μ*(@d_zi(Vy)/dz + @d_yi(Vz)/dy)
-    @all(τzx) = @all(τzx) + dt*μ*(@d_xi(Vz)/dx + @d_zi(Vx)/dz)
+@parallel function compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, _dx, _dy, _dz)
+    @all(τxx) = @all(τxx) + dt*(2.0*μ*(@d_xi(Vx)*_dx) - 1.0/3.0*@inn_yz(∇V))
+    @all(τyy) = @all(τyy) + dt*(2.0*μ*(@d_yi(Vy)*_dy) - 1.0/3.0*@inn_xz(∇V))
+    @all(τzz) = @all(τzz) + dt*(2.0*μ*(@d_zi(Vz)*_dz) - 1.0/3.0*@inn_xy(∇V))
+    @all(τxy) = @all(τxy) + dt*μ*(@d_yi(Vx)*_dy + @d_xi(Vy)*_dx)
+    @all(τyz) = @all(τyz) + dt*μ*(@d_zi(Vy)*_dz + @d_yi(Vz)*_dy)
+    @all(τzx) = @all(τzx) + dt*μ*(@d_xi(Vz)*_dx + @d_zi(Vx)*_dz)
     return
 end
 
-@parallel function compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dt, dx, dy, dz)
-	# dVxdt = -1/ρ*(@d_xi(P)/dx - @d_xa(τxx)/dx - @d_ya(τxy)/dy - @d_za(τzx)/dz)
+@parallel function compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ, _dx, _dy, _dz)
+	# dVxdt = -1/ρ*(@d_xi(P)*_dx - @d_xa(τxx)*_dx - @d_ya(τxy)*_dy - @d_za(τzx)*_dz)
 	# Vx    = Vx + dt*dVxdt
-    @inn(Vx) = @inn(Vx) - dt/ρ*(@d_xi(P)/dx - @d_xa(τxx)/dx - @d_ya(τxy)/dy - @d_za(τzx)/dz)
-    @inn(Vy) = @inn(Vy) - dt/ρ*(@d_yi(P)/dy - @d_ya(τyy)/dy - @d_za(τyz)/dz - @d_xa(τxy)/dx)
-    @inn(Vz) = @inn(Vz) - dt/ρ*(@d_zi(P)/dz - @d_za(τzz)/dz - @d_xa(τzx)/dx - @d_ya(τyz)/dy)
+    @inn(Vx) = @inn(Vx) - dt_ρ*(@d_xi(P)*_dx - @d_xa(τxx)*_dx - @d_ya(τxy)*_dy - @d_za(τzx)*_dz)
+    @inn(Vy) = @inn(Vy) - dt_ρ*(@d_yi(P)*_dy - @d_ya(τyy)*_dy - @d_za(τyz)*_dz - @d_xa(τxy)*_dx)
+    @inn(Vz) = @inn(Vz) - dt_ρ*(@d_zi(P)*_dz - @d_za(τzz)*_dz - @d_xa(τzx)*_dx - @d_ya(τyz)*_dy)
     return
 end
 
-@parallel function compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
-    @all(∇V) = @d_xa(Vx)/dx + @d_ya(Vy)/dy + @d_za(Vz)/dz
+@parallel function compute_∇V!(Vx, Vy, Vz, ∇V, _dx, _dy, _dz)
+    @all(∇V) = @d_xa(Vx)*_dx + @d_ya(Vy)*_dy + @d_za(Vz)*_dz
     return
 end
 
@@ -56,10 +56,14 @@ Runs the 3D elastic wave simulation\\
     nx, ny, nz = res, res, res
 
     # Derived numerics
-    dx, dy, dz = Lx/nx, Ly/ny, Lz,nz
+    dx, dy, dz = Lx/nx, Ly/ny, Lz/nz
     dt         = min(dx,dy,dz)/sqrt((K + 4/3*μ)/ρ)/2.1
     nt         = cld(ttot, dt)
     xc, yc, zc = LinRange(dx/2, Lx-dx/2, nx), LinRange(dy/2, Ly-dy/2, ny), LinRange(dz/2, Lz-dz/2, nz)
+
+	# Optimized numerics
+	_dx, _dy, _dz = 1.0/dx, 1.0/dy, 1.0/dz
+	dt_ρ = dt/ρ
 
     # Array initialisation
     P   = exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc])
@@ -87,9 +91,9 @@ Runs the 3D elastic wave simulation\\
 
     # Time loop
     for it = 1:nt
-        @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, dx, dy, dz)
-        @parallel compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, ρ, dt, dx, dy, dz)
-        @parallel compute_∇V!(Vx, Vy, Vz, ∇V, dx, dy, dz)
+        @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, _dx, _dy, _dz)
+        @parallel compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ, _dx, _dy, _dz)
+        @parallel compute_∇V!(Vx, Vy, Vz, ∇V, _dx, _dy, _dz)
         @parallel compute_P!(P, ∇V, K, dt)
 
         # Start the clock after warmup-iterations
@@ -117,7 +121,7 @@ Runs the 3D elastic wave simulation\\
         )
         t_it  = t_toc/(nt-warmup)                   # Execution time per iteration [s]
         T_eff = A_eff/t_it                          # Effective memory throughput [GB/s]
-        println("t=$t_toc s, T_eff=$T_eff GB/s")
+        println("size=$res, t=$t_toc s, T_eff=$T_eff GB/s")
     end
 
     # Save the animation as a GIF
@@ -125,5 +129,9 @@ Runs the 3D elastic wave simulation\\
         gif(anim, "renders/elastic_wave_3D_$res.gif", fps=30)
     end
 
-    return xc, P
+	@static if BENCHMARK
+		return T_eff
+	else
+		return xc, P
+	end
 end
