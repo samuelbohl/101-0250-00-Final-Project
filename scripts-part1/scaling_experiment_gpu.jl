@@ -1,4 +1,4 @@
-# julia ./scripts-part1/scaling_experiment_gpu.jl
+# julia -O3 --check-bounds=no ./scripts-part1/scaling_experiment_gpu.jl
 const USE_GPU = true
 const BENCHMARK = true
 const VISUALIZE = false

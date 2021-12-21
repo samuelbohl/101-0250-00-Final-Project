@@ -1,7 +1,7 @@
-# julia -t 1 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -t 4 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -t 8 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -t 16 ./scripts-part1/scaling_experiment_cpu.jl
+# julia -O3 --check-bounds=no -t 1 ./scripts-part1/scaling_experiment_cpu.jl
+# julia -O3 --check-bounds=no -t 4 ./scripts-part1/scaling_experiment_cpu.jl
+# julia -O3 --check-bounds=no -t 8 ./scripts-part1/scaling_experiment_cpu.jl
+# julia -O3 --check-bounds=no -t 16 ./scripts-part1/scaling_experiment_cpu.jl
 const USE_GPU = false
 const BENCHMARK = true
 const VISUALIZE = false
@@ -24,5 +24,5 @@ max_bandwith = 50.0 # Theoretical Max Memory Bandwidth of Intel Core i7-11700
 num_threads = Threads.nthreads()
 
 plot(grid_sizes, max_bandwith .* ones(5), label="Theoretical Max Bandwidth")
-plot!(grid_sizes, T_effs, xlabel="cbrt(grid size)", ylabel="T_eff GB/s", ylims=(0.0, max_bandwith), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="diffusion3D_xpu_perf.jl")
+plot!(grid_sizes, T_effs, xlabel="cbrt(grid size)", ylabel="T_eff GB/s", ylims=(0.0, max(max_bandwith, maximum(T_effs))), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="diffusion3D_xpu_perf.jl")
 png("$(@__DIR__)/../docs/img/diffusion3D_scaling_experiment_cpu_$(num_threads)threads")

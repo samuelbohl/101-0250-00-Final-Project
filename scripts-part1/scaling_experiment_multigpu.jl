@@ -1,7 +1,7 @@
-# ~/.julia/bin/mpiexecjl -n 1 julia --project ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 2 julia --project ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 3 julia --project ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 4 julia --project ./scripts-part1/scaling_experiment_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 1 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 2 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 3 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 4 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
 using MAT
 
 const USE_GPU = true
