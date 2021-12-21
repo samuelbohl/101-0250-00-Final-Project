@@ -12,6 +12,10 @@ if !@isdefined VISUALIZE
     const VISUALIZE = true
 end
 
+if !@isdefined STEADY
+    const STEADY = false
+end
+
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
 #ParallelStencil.@reset_parallel_stencil()
@@ -22,8 +26,13 @@ else
 end
 
 
-@parallel function compute_ResH!(H, Hold, ResH, D, _dt, D_dx², D_dy², D_dz²)
+@parallel function compute_ResH!(H, Hold, ResH, _dt, D_dx², D_dy², D_dz²)
     @all(ResH) = -(@inn(H) - @inn(Hold)) * _dt + (@d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²)
+    return
+end
+
+@parallel function compute_ResH_steady!(H, ResH, D_dx², D_dy², D_dz²)
+    @all(ResH) = @d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²
     return
 end
 
@@ -86,12 +95,13 @@ Runs the 3D dualtime diffusion simulation\\
     @static if BENCHMARK
         warmup = 10         # Number of warmup-iterations
         t_tic  = 0.0        # Holds start time
-        itMax  = 1e4/(nx*4) # scale max number of iterations down my grid size
+        itMax  = 1e4/nx     # scale max number of iterations down my grid size
     end
 
     # Animation object for visualization
     @static if VISUALIZE
         gr()
+        ENV["GKSwstype"] = "nul"
         anim = Animation()
         H_v = zeros(nx, ny, nz)
         init_extrema = extrema(H)
@@ -103,18 +113,68 @@ Runs the 3D dualtime diffusion simulation\\
     it_t = 0
     ittot = 0
 
-    # Physical time loop
-    while t<ttot
+    @static if !STEADY
+        println("Running with dual-time")
 
-        # initial pseudo-transient loop conditions
-        it_τ = 0
-        err = 2*tol
+        # Physical time loop
+        while t<ttot
+
+            # initial pseudo-transient loop conditions
+            it_τ = 0
+            err = 2*tol
+
+            # Pseudo-transient iteration
+            while err>tol && it_τ<itMax
+
+                # Step 1
+                @parallel compute_ResH!(H, Hᵗ, ResH, _dt, D_dx², D_dy², D_dz²)
+                # Step 2
+                @parallel compute_dHdt!(ResH, dHdt, dHdt2, damp)
+                dHdt, dHdt2 = dHdt2, dHdt # Pointer Swap
+                # Step 3
+                @parallel compute_H!(H2, H, dHdt, dτ)
+                H, H2 = H2, H # Pointer Swap
+
+                # Calculate L2 norm
+                if (it_τ % nout == 0)
+                    err = norm(ResH)/sqrt(length(ResH))
+                end
+
+                # Start the clock after warmup-iterations
+                @static if BENCHMARK
+                    if (it_t == 0 && it_τ == warmup+1)
+                        t_tic = Base.time();
+                    end
+                end
+
+                # Render a slice of the 3D diffusion-map and save as an animation frame
+                @static if VISUALIZE
+                    if (it_τ % nout == 0)
+                        H_v .= H
+                        opts = (aspect_ratio=1, xlims=extrema(xc), ylims=extrema(yc), clims=init_extrema, xlabel="lx", ylabel="ly", title="3D Diffusion (it_t=$it_t, it_τ=$it_τ)")                                        
+                        heatmap(xc, yc, H_v[:,:,nz÷2]; opts...)
+                        frame(anim)
+                    end
+                end
+
+                it_τ += 1
+            end
+
+            # update physical time step
+            ittot += it_τ; it_t += 1; t += dt
+            Hᵗ .= H
+            if isnan(err) error("NaN") end
+        end
+    else 
+        println("Running in pseudo-time to steady-state")
+
+        damp = 1-4/nx  # damping (this is a tuning parameter, dependent on e.g. grid resolution)
+        it_τ = 0; err = 2*tol
 
         # Pseudo-transient iteration
         while err>tol && it_τ<itMax
-
             # Step 1
-            @parallel compute_ResH!(H, Hᵗ, ResH, D, _dt, D_dx², D_dy², D_dz²)
+            @parallel compute_ResH_steady!(H, ResH, D_dx², D_dy², D_dz²)
             # Step 2
             @parallel compute_dHdt!(ResH, dHdt, dHdt2, damp)
             dHdt, dHdt2 = dHdt2, dHdt # Pointer Swap
@@ -122,34 +182,13 @@ Runs the 3D dualtime diffusion simulation\\
             @parallel compute_H!(H2, H, dHdt, dτ)
             H, H2 = H2, H # Pointer Swap
 
-            # Calculate L2 norm
+            # Calculate L2 norm (error)
             if (it_τ % nout == 0)
                 err = norm(ResH)/sqrt(length(ResH))
             end
-
-            # Start the clock after warmup-iterations
-            @static if BENCHMARK
-                if (it_t == 0 && it_τ == warmup+1)
-                    t_tic = Base.time();
-                end
-            end
-
-            # Render a slice of the 3D diffusion-map and save as an animation frame
-            @static if VISUALIZE
-                if (it_τ % nout == 0)
-                    H_v .= H
-                    opts = (aspect_ratio=1, xlims=extrema(xc), ylims=extrema(yc), clims=init_extrema, xlabel="lx", ylabel="ly", title="3D Diffusion (it_t=$it_t, it_τ=$it_τ)")                                        
-                    heatmap(xc, yc, H_v[:,:,nz÷2]; opts...)
-                    frame(anim)
-                end
-            end
-
             it_τ += 1
         end
-
-        # update physical time step
-        ittot += it_τ; it_t += 1; t += dt
-        Hᵗ .= H
+        ittot += it_τ; it_t += 1
         if isnan(err) error("NaN") end
     end
 
@@ -174,6 +213,8 @@ Runs the 3D dualtime diffusion simulation\\
     # Return T_eff if BENCHMARK and Result otherwise
     @static if BENCHMARK
         return T_eff
+    elseif STEADY
+        return ittot
     else
         return xc, Array(H)
     end
