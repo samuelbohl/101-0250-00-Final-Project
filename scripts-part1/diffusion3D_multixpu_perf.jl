@@ -201,5 +201,3 @@ norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WO
         return xc, Array(H)
     end
 end
-
-diffusion_3D(256)
