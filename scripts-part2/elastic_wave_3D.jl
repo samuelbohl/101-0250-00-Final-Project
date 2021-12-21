@@ -105,7 +105,7 @@ Runs the 3D elastic wave simulation\\
 
         # Render a slice of the 3D pressure-map and save as an animation frame
         @static if VISUALIZE
-            opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.15, 0.65), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
+            opts = (aspect_ratio=1, xlims=(xc[1], xc[end]), ylims=(yc[1], yc[end]), clims=(-0.2, 0.6), c=:davos, xlabel="Lx", ylabel="Ly", title="time = $(round(it*dt, sigdigits=3))")
             heatmap(xc, yc, P[:,:,cld(nz,2)]'; opts...)
             frame(anim)
         end
@@ -126,7 +126,8 @@ Runs the 3D elastic wave simulation\\
 
     # Save the animation as a GIF
     @static if VISUALIZE
-        gif(anim, "renders/elastic_wave_3D_$res.gif", fps=30)
+		fps = min(60.0, (float(nt)/ttot))
+        gif(anim, "./docs/img/elastic_wave_3D.gif", fps=fps)
     end
 
 	@static if BENCHMARK

@@ -21,4 +21,4 @@ num_threads = Threads.nthreads()
 
 plot(grid_size, max_bandwith .* ones(5), label="Theoretical Max Bandwidth")
 plot!(grid_size, T_effs, xlabel="grid_size", ylabel="T_eff GB/s", ylims=(0.0, max_bandwith), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="elastic_wave_3D.jl", lw=3)
-png("../docs/img/elastic_wave_3D_scaling_experiment_cpu_$(num_threads)threads")
+png("./docs/img/elastic_wave_3D_scaling_experiment_cpu_$(num_threads)threads")
