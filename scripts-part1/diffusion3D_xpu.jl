@@ -1,5 +1,6 @@
-using Printf, LinearAlgebra, Plots
+using Printf, LinearAlgebra, Plots, ParallelStencil, ParallelStencil.FiniteDifferences3D
 
+# Initialize Globals
 if !@isdefined USE_GPU
     const USE_GPU = false
 end
@@ -9,16 +10,14 @@ if !@isdefined BENCHMARK
 end
 
 if !@isdefined VISUALIZE
-    const VISUALIZE = true
+    const VISUALIZE = false
 end
 
 if !@isdefined STEADY
     const STEADY = false
 end
 
-using ParallelStencil
-using ParallelStencil.FiniteDifferences3D
-#ParallelStencil.@reset_parallel_stencil()
+# Initialize `ParallelStencil.jl`
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
@@ -47,19 +46,23 @@ end
 end
 
 """
-    diffusion_3D(res)
+    diffusion_3D(res[,tol])
 
 Runs the 3D dualtime diffusion simulation
 
 # Arguments
 - `res::Int`: xyz-resolutions of the simulation
+- `tol::Float64`(optional): tolerance for convergence - default: `1e-8`
 
 # Returns (Depending on globals)
-- `T_eff`: Effective memory throughput [GB/s] - if the BENCHMARK is true
-- `ittot`: Total number of iterations needed to reach steadystate - if STEADY is true and BENCHMARK is false
-- `xc` and `H`: The global x-coordinate Array and the global solution array - if STEADY and BENCHMARK are false
+- If BENCHMARK is true -> 
+    `T_eff`: Effective memory throughput [GB/s]
+- If STEADY is true and BENCHMARK is false -> 
+    `ittot`, `xc` and `H`: Total number of iterations needed to reach steadystate, the global x-coordinate Array and the global solution array
+- If STEADY and BENCHMARK are false -> 
+    `xc` and `H`: The global x-coordinate Array and the global solution array
 """
-@views function diffusion_3D(res::Int)
+@views function diffusion_3D(res::Int; tol=1e-8)
     # Physics
     lx, ly, lz = 10.0, 10.0, 10.0 # domain size
     D     = 1.0                   # diffusion coefficient
@@ -68,7 +71,6 @@ Runs the 3D dualtime diffusion simulation
 
     # Numerics
     nx, ny, nz = res, res, res
-    tol        = 1e-8             # tolerance
     itMax      = 1e4              # max number of iterations
     nout       = 10               # tol check
 
@@ -228,7 +230,7 @@ Runs the 3D dualtime diffusion simulation
     @static if BENCHMARK
         return T_eff
     elseif STEADY
-        return ittot
+        return ittot, xc, Array(H)
     else
         return xc, Array(H)
     end
