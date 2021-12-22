@@ -6,7 +6,7 @@ const USE_GPU = false
 const BENCHMARK = false
 const VISUALIZE = false
 
-include("../scripts-part1/diffusion3D_xpu_perf.jl")
+include("../scripts-part1/diffusion3D_xpu.jl")
 
 
 xc, H = diffusion_3D(32)

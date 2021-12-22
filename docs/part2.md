@@ -1,14 +1,14 @@
 # Part 2: 3D XPU Elastic Waves Solver
 Solving the 3D Navier-Cauchy equations for elastic waves on XPU using [ParallelStencil.jl](https://github.com/omlins/ParallelStencil.jl).
 
+## Methods
+As a starting point, we used `acoustic_2D_elast3.jl` from the final task of exercise 3 in [lecture 7](https://eth-vaw-glaciology.github.io/course-101-0250-00/lecture7/#towards_stokes_flow_i_acoustic_to_elastic). The file already implemented a 2D Navier-Cauchy wave equation. The 2D (and 3D) Navier-Cauchy equations are best described by the following set of equations taken from the lecture:
+
 <img src="https://latex.codecogs.com/svg.image?\frac{\partial&space;P}{\partial&space;t}&space;=&space;-K\nabla_kv_k&space;" title="\frac{\partial P}{\partial t} = -K\nabla_kv_k " />
 
 <img src="https://latex.codecogs.com/svg.image?\frac{\partial\tau}{\partial&space;t}=\mu\left(\nabla_iv_j&plus;\nabla_jv_i-\frac{1}{3}\delta_{ij}\nabla_kv_k\right)" title="\frac{\partial\tau}{\partial t}=\mu\left(\nabla_iv_j+\nabla_jv_i-\frac{1}{3}\delta_{ij}\nabla_kv_k\right)" />
 
 <img src="https://latex.codecogs.com/svg.image?\rho\frac{\partial&space;v_i}{\partial&space;t}=\nabla_j(\tau_{ij}-P\delta_{ij})" title="\rho\frac{\partial v_i}{\partial t}=\nabla_j(\tau_{ij}-P\delta_{ij})" />
-
-## Methods
-As a starting point, we used `acoustic_2D_elast3.jl` from the final task of exercise 3 in [lecture 7](https://eth-vaw-glaciology.github.io/course-101-0250-00/lecture7/#towards_stokes_flow_i_acoustic_to_elastic).
 
 To add a 3rd dimension, we added 1 new normal-stress component (τzz) and 2 new shear-stress components (τyz, τzx):
 ```julia
@@ -27,6 +27,16 @@ The only thing left then is to update `∇V`:
 ```julia
 @all(∇V) = @d_xa(Vx)/dx + @d_ya(Vy)/dy + @d_za(Vz)/dz
 ```
+
+### Performance optimizations
+
+After the solver was up and running, we noticed some things that could be optimized.
+
+Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdt`) were removed to reduce memory footprint and memory access time, while at the same time not increasing the amount of computational work.
+
+`∇V`, although being a temporary array, was not inlined because doing so would significantly increase the computational work required, and we are likely compute-bound rather than memory-bound for this problem.
+
+Constant divisions were also replaced by multiplication of their inverse, and consecutive multiplications were merged to reduce the computational work.
 
 ## Results
 
@@ -59,7 +69,7 @@ A_eff = 1e-9 * sizeof(Float64) * (
 
 #### CPU Performance
 
-An AMD Ryzen 5 5600G (6C12T, T_peak=47.68 GB/s) was used for the CPU performance benchmark.
+An AMD Ryzen 5 5600G (6C12T, T_peak=47.68 GB/s [[1]](#1)) was used for the CPU performance benchmark.
 
 ![3D elastic wave CPU benchmark](img/elastic_wave_3D_scaling_experiment_cpu_6threads.png)
 
@@ -71,3 +81,25 @@ export JULIA_NUM_THREADS=<num_threads>
 julia --project -O3 --check-bounds=no scripts-part2/elastic_wave_3D_benchmark_cpu.jl
 ```
 Replace `<num_threads>` with the amount of physical cores in your CPU.
+
+#### GPU Performance
+
+An NVIDIA GeForce RTX 3060 (T_eff=360 GB/s, 199 GFLOPS (FP64) [[2]](#2)) was used for the GPU performance benchmark.
+
+![3D elastic wave GPU benchmark](img/elastic_wave_3D_scaling_experiment_gpu.png)
+
+A resolution of `512x512x512` wasn't tested because it didn't fit in the 12 GB of VRAM that the 3060 had.
+
+In this case, too, we are bound by the computing power rather than the memory bandwidth.
+
+To run the GPU performance benchmark:
+
+```
+julia --project -O3 --check-bounds=no scripts-part2/elastic_wave_3D_benchmark_gpu.jl
+```
+
+## References
+
+<a id="1">[1]</a> https://en.wikichip.org/wiki/amd/ryzen_5/5600g
+
+<a id="2">[2]</a> https://www.techpowerup.com/gpu-specs/geforce-rtx-3060.c3682
