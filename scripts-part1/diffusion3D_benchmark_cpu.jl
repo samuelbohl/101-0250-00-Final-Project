@@ -31,6 +31,6 @@ max_bandwith = 50.0 # Theoretical Max Memory Bandwidth of Intel Core i7-11700
 num_threads = Threads.nthreads()
 
 # Plot the results
-plot(grid_sizes, max_bandwith .* ones(5), label="Theoretical Max Bandwidth")
-plot!(grid_sizes, T_effs, xlabel="cbrt(grid size)", ylabel="T_eff GB/s", ylims=(0.0, max(max_bandwith, maximum(T_effs))), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="diffusion3D_xpu_perf.jl")
+plot(grid_sizes, max_bandwith .* ones(5), label="Theoretical Max Bandwidth", lw=3)
+plot!(grid_sizes, T_effs, xlabel="cbrt(grid size)", ylabel="T_eff GB/s", ylims=(0.0, max_bandwith+5), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="diffusion3D_xpu.jl", lw=3)
 png("$(@__DIR__)/../docs/img/diffusion3D_scaling_experiment_cpu_$(num_threads)threads")

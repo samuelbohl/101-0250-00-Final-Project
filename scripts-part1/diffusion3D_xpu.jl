@@ -210,13 +210,12 @@ Runs the 3D dualtime diffusion simulation
 
     # Calculate performance
     @static if BENCHMARK
-        t_toc = Base.time() - t_tic                                          # Stop the clock
-        ResH_bound = length(ResH) + length(H) + length(Hᵗ)                   # Memory access: write ResH and read H + Hᵗ
-        dHdt_bound = 2 * length(dHdt) + length(ResH)                         # Memory access: update dHdt and read ResH
-        H_bound = 2 * length(H) + length(dHdt)                               # Memory access: update H and read dHdt
-        A_eff = 1e-9 * (ResH_bound + dHdt_bound + H_bound) * sizeof(Float64) # Effective main memory access per iteration [GB]
-        t_it  = t_toc/(ittot-warmup)                                         # Execution time per iteration [s]
-        T_eff = A_eff/t_it                                                   # Effective memory throughput [GB/s]
+        t_toc = Base.time() - t_tic                            # Stop the clock
+        reads = length(Hᵗ)                                     # Read Only Memory Access: Hᵗ
+        updates = length(H) + length(dHdt)                     # Update Memory access: H and dHdt
+        A_eff = 1e-9 * (2 * updates + reads) * sizeof(Float64) # Effective main memory access per iteration [GB]
+        t_it  = t_toc/(ittot-warmup)                           # Execution time per iteration [s]
+        T_eff = A_eff/t_it                                     # Effective memory throughput [GB/s]
         println("time(sec)=$t_toc T_eff=$T_eff")
     end
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it_t, nx, ittot)
