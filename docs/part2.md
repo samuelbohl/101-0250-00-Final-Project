@@ -27,20 +27,47 @@ The only thing left then is to update `∇V`:
 ```julia
 @all(∇V) = @d_xa(Vx)/dx + @d_ya(Vy)/dy + @d_za(Vz)/dz
 ```
-For visualization, we took a 2D slice of the 3D pressure matrix `P` at `z=Lz/2`.
 
 ## Results
 
-### The physics you are resolving
+For visualization, we took a 2D slice of the 3D pressure matrix `P` at `z=Lz/2`.
+
+![3D elastic wave simulation](img/elastic_wave_3D.gif)
+
+A resolution of 128x128x128 was used for the visualization. To replicate:
+
+```
+julia --project -O3 --check-bounds=no scripts-part2/elastic_wave_3D_visualize.jl
+```
 
 ### Performance
 
-#### Memory throughput
+#### Performance metric
 
-#### Weak scaling
+We are using the [performance metric](https://github.com/omlins/ParallelStencil.jl#performance-metric) proposed in the [ParallelStencil.jl](https://github.com/omlins/ParallelStencil.jl) library.
 
-#### Work-precision diagrams
+In our case, the `A_eff` metric was calculated as follows:
+```julia
+# Effective main memory access per iteration [GB]
+A_eff = 1e-9 * sizeof(Float64) * (
+    2 * (length(τxx) + length(τyy) + length(τzz) + length(τxy) + length(τyz) + length(τzx))
+  + 2 * (length(Vx)  + length(Vy)  + length(Vz))
+  + 2 * (length(P))
+)
+```
+`∇V` isn't included in the calculation as it is only used as a temporary.
 
-## Discussion
+#### CPU Performance
 
-## References
+An AMD Ryzen 5 5600G (6C12T, T_peak=47.68 GB/s) was used for the CPU performance benchmark.
+
+![3D elastic wave CPU benchmark](img/elastic_wave_3D_scaling_experiment_cpu_6threads.png)
+
+It is obvious from the graph that we are compute-bound for this problem on this particular CPU.
+
+To run the CPU performance benchmark:
+```
+export JULIA_NUM_THREADS=<num_threads>
+julia --project -O3 --check-bounds=no scripts-part2/elastic_wave_3D_benchmark_cpu.jl
+```
+Replace `<num_threads>` with the amount of physical cores in your CPU.
