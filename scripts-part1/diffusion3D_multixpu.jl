@@ -41,7 +41,18 @@ end
 
 norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WORLD)))
 
+"""
+    diffusion_3D(res)
 
+Runs the 3D dualtime diffusion simulation
+
+# Arguments
+- `res::Int`: xyz-resolutions of the simulation
+
+# Returns (Depending on globals)
+- `T_eff`: Effective memory throughput [GB/s] - if the BENCHMARK is true
+- `xc` and `H`: The global x-coordinate Array and the global solution array - if BENCHMARK is false
+"""
 @views function diffusion_3D(res::Int)
 
     # Physics

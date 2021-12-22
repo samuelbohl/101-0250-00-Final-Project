@@ -1,8 +1,8 @@
-# julia -O3 --check-bounds=no ./scripts-part1/scaling_experiment_gpu.jl
+# julia -O3 --check-bounds=no ./scripts-part1/diffusion3D_benchmark_gpu.jl
 const USE_GPU = true
 const BENCHMARK = true
 const VISUALIZE = false
-include("./diffusion3D_xpu_perf.jl")
+include("./diffusion3D_xpu.jl")
 
 # Grid sizes for the scaling experiment
 grid_sizes = 16 * 2 .^ (1:5)

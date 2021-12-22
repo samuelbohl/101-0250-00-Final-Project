@@ -47,11 +47,17 @@ end
 end
 
 """
-Runs the 3D dualtime diffusion simulation\\
-`elastic_wave_3D(res, ttot, do_vis) -> xc, P`\\
-    `res`    (Int)     : xyz-resolutions of the simulation\\
-    `T_eff` is returned if the BENCHMARK variable is set true\\
-    `xc` and `P` are returned otherwise -> for testing purposes
+    diffusion_3D(res)
+
+Runs the 3D dualtime diffusion simulation
+
+# Arguments
+- `res::Int`: xyz-resolutions of the simulation
+
+# Returns (Depending on globals)
+- `T_eff`: Effective memory throughput [GB/s] - if the BENCHMARK is true
+- `ittot`: Total number of iterations needed to reach steadystate - if STEADY is true and BENCHMARK is false
+- `xc` and `H`: The global x-coordinate Array and the global solution array - if STEADY and BENCHMARK are false
 """
 @views function diffusion_3D(res::Int)
     # Physics
@@ -96,6 +102,11 @@ Runs the 3D dualtime diffusion simulation\\
         warmup = 10         # Number of warmup-iterations
         t_tic  = 0.0        # Holds start time
         itMax  = 1e4/nx     # scale max number of iterations down my grid size
+    end
+
+    # Run to Steady State variables
+    @static if STEADY
+        damp = 1-4/nx
     end
 
     # Animation object for visualization
@@ -168,8 +179,9 @@ Runs the 3D dualtime diffusion simulation\\
     else 
         println("Running in pseudo-time to steady-state")
 
-        damp = 1-4/nx  # damping (this is a tuning parameter, dependent on e.g. grid resolution)
-        it_τ = 0; err = 2*tol
+        # initial pseudo-transient loop conditions
+        it_τ = 0
+        err = 2*tol
 
         # Pseudo-transient iteration
         while err>tol && it_τ<itMax
@@ -188,6 +200,8 @@ Runs the 3D dualtime diffusion simulation\\
             end
             it_τ += 1
         end
+
+        # update physical time step
         ittot += it_τ; it_t += 1
         if isnan(err) error("NaN") end
     end

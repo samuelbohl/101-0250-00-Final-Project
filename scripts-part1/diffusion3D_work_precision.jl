@@ -4,7 +4,7 @@ const VISUALIZE = false
 const STEADY = true
 
 
-include("diffusion3D_xpu_perf.jl")
+include("diffusion3D_xpu.jl")
 
 # Grid sizes for the work presicion diagram
 grid_sizes = 16 * 2 .^ (1:5)

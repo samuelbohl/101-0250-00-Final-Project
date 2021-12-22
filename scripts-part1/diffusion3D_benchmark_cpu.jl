@@ -1,11 +1,11 @@
-# julia -O3 --check-bounds=no -t 1 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -O3 --check-bounds=no -t 4 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -O3 --check-bounds=no -t 8 ./scripts-part1/scaling_experiment_cpu.jl
-# julia -O3 --check-bounds=no -t 16 ./scripts-part1/scaling_experiment_cpu.jl
+# julia -O3 --check-bounds=no -t 1 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia -O3 --check-bounds=no -t 4 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia -O3 --check-bounds=no -t 8 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia -O3 --check-bounds=no -t 16 ./scripts-part1/diffusion3D_benchmark_cpu.jl
 const USE_GPU = false
 const BENCHMARK = true
 const VISUALIZE = false
-include("./diffusion3D_xpu_perf.jl")
+include("./diffusion3D_xpu.jl")
 
 # Grid sizes for the scaling experiment
 grid_sizes = 16 * 2 .^ (1:5)

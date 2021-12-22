@@ -1,13 +1,13 @@
-# ~/.julia/bin/mpiexecjl -n 1 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 2 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 3 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
-# ~/.julia/bin/mpiexecjl -n 4 julia --project -O3 --check-bounds=no ./scripts-part1/scaling_experiment_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 1 julia --project -O3 --check-bounds=no ./scripts-part1/diffusion3D_benchmark_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 2 julia --project -O3 --check-bounds=no ./scripts-part1/diffusion3D_benchmark_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 3 julia --project -O3 --check-bounds=no ./scripts-part1/diffusion3D_benchmark_multigpu.jl
+# ~/.julia/bin/mpiexecjl -n 4 julia --project -O3 --check-bounds=no ./scripts-part1/diffusion3D_benchmark_multigpu.jl
 using MAT
 
 const USE_GPU = true
 const BENCHMARK = true
 const VISUALIZE = false
-include("./diffusion3D_multixpu_perf.jl")
+include("./diffusion3D_multixpu.jl")
 
 T_eff, t_toc, nprocs, me = diffusion_3D(256)
 println("Scaling Experiment MultiXPU: $(T_eff)")
