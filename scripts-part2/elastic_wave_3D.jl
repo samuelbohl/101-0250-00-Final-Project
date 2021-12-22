@@ -66,7 +66,7 @@ Runs the 3D elastic wave simulation\\
 	dt_ρ = dt/ρ
 
     # Array initialisation
-    P   = exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc])
+    P   = Data.Array(exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc]))
     Vx  = @zeros(nx+1,ny  ,nz  )
     Vy  = @zeros(nx  ,ny+1,nz  )
     Vz  = @zeros(nx  ,ny  ,nz+1)
