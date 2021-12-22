@@ -40,7 +40,7 @@ end
 
 """
 Runs the 3D elastic wave simulation\\
-`elastic_wave_3D(res, ttot, do_vis) -> xc, P`\\
+`elastic_wave_3D(res, ttot) -> xc, P`\\
     `res`    (Int)     : xyz-resolutions of the simulation\\
     `ttot`   (Float64) : total simulation time\\
     `xc` and `P` are returned for testing purposes

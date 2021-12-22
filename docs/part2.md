@@ -28,6 +28,16 @@ The only thing left then is to update `∇V`:
 @all(∇V) = @d_xa(Vx)/dx + @d_ya(Vy)/dy + @d_za(Vz)/dz
 ```
 
+### Performance optimizations
+
+After the solver was up and running, we noticed some things that could be optimized.
+
+Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdy`) were removed to reduce memory footprint and memory access time, while at the same time not increasing the amount of computational work.
+
+`∇V`, although being a temporary array, was not inlined because doing so would significantly increase the computational work required, and we are likely compute-bound rather than memory-bound for this problem.
+
+Constant divisions were also replaced by multiplication of their inverse, and consecutive multiplications were merged to reduce the computational work.
+
 ## Results
 
 For visualization, we took a 2D slice of the 3D pressure matrix `P` at `z=Lz/2`.
