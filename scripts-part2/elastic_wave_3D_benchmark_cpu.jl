@@ -16,9 +16,9 @@ end
 
 # Visualization of Results
 gr()
-max_bandwith = 50.0 # Theoretical Max Memory Bandwidth of Intel Core i7-11700
+max_bandwith = 47.68 # Theoretical Max Memory Bandwidth of Ryzen 5 5600G
 num_threads = Threads.nthreads()
 
-plot(grid_size, max_bandwith .* ones(5), label="Theoretical Max Bandwidth")
-plot!(grid_size, T_effs, xlabel="grid_size", ylabel="T_eff GB/s", ylims=(0.0, max_bandwith), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="elastic_wave_3D.jl", lw=3)
+plot(grid_size, max_bandwith .* ones(5), label="Theoretical Max Bandwidth", lw=3)
+plot!(grid_size, T_effs, xlabel="grid_size", ylabel="T_eff GB/s", ylims=(0.0, 60.0), title="CPU Scaling Experiment $(num_threads) Thread(s)", label="elastic_wave_3D.jl", lw=3)
 png("./docs/img/elastic_wave_3D_scaling_experiment_cpu_$(num_threads)threads")
