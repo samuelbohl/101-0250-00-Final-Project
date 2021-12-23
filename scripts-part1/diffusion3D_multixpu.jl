@@ -21,8 +21,8 @@ else
     @init_parallel_stencil(Threads, Float64, 3);
 end
 
-# Helper for shorter notation
-@views inn(A) = A[2:end-1,2:end-1,2:end-1]
+# Macro for shorter notation
+macro inner(A) esc(:( $A[2:end-1,2:end-1,2:end-1] )) end
 
 # Helper - Calculates global L2 norm using MPI
 norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WORLD)))
@@ -164,7 +164,7 @@ Runs the 3D dualtime diffusion simulation on multiple processes using MPI via `I
             # Render a slice of the 3D diffusion-map and save as an animation frame
             @static if VISUALIZE
                 if (it_τ % nout == 0)
-                    H_nohalo .= inn(H)     # Copy data to CPU removing the halo
+                    H_nohalo .= @inner(H)  # Copy data to CPU removing the halo
                     gather!(H_nohalo, H_v) # Gather data on process 0 
 
                     # Visualize it on process 0.                              

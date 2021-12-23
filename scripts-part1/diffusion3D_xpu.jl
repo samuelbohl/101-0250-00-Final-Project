@@ -24,6 +24,8 @@ else
     @init_parallel_stencil(Threads, Float64, 3);
 end
 
+# Macro for shorter notation
+macro inner(A) esc(:( $A[2:end-1,2:end-1,2:end-1] )) end
 
 @parallel function compute_ResH!(H, Hold, ResH, _dt, D_dx², D_dy², D_dz²)
     @all(ResH) = -(@inn(H) - @inn(Hold)) * _dt + (@d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²)
@@ -95,9 +97,9 @@ Runs the 3D dualtime diffusion simulation
     ResH  = @zeros(nx-2, ny-2, nz-2)
 
     # Initial condition
-    H  .= Data.Array([2.0 * exp(-(xc[ix] - 0.5*lx)^2 -(yc[iy] - 0.5*ly)^2 -(zc[iz] - 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz])
-    H2 .= H
-    Hᵗ .= H
+    @inner(H) .= @inner(Data.Array([2.0 * exp(-(xc[ix] - 0.5*lx)^2 -(yc[iy] - 0.5*ly)^2 -(zc[iz] - 0.5*lz)^2) for ix=1:nx, iy=1:ny, iz=1:nz]))
+    H2        .= H
+    Hᵗ        .= H
 
     # Benchmark variables
     @static if BENCHMARK
