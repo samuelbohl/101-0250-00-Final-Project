@@ -38,13 +38,36 @@ Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdt`) wer
 
 Constant divisions were also replaced by multiplication of their inverse, and consecutive multiplications were merged to reduce the computational work.
 
+### File structure
+
+The relavant files for this part are listed in the tree below.
+
+```
+.
+├── docs
+│   ├── img                                 # Automatically-generated plots and animations are saved here
+│   └── part2.md                            # You are here :)
+├── scripts-part2
+│   ├── elastic_wave_3D.jl                  # Main file, contains the solver code and physical parameters
+│   ├── elastic_wave_3D_benchmark_cpu.jl    # CPU performance benchmark (calls the main file)
+│   ├── elastic_wave_3D_benchmark_gpu.jl    # GPU performance benchmark (calls the main file)
+│   ├── elastic_wave_3D_testing.jl          # File used for reference testing (calls the main file)
+│   └── elastic_wave_3D_visualize.jl        # Render the simulation (calls the main file)
+└── test
+    ├── part2.jl                            # Reference tests and unit tests
+    ├── reftest-files
+    │   └── test_2.bson
+    └── runtests.jl
+```
+All commands to replicate the results below should be run from the repository's top-level directory.
+
 ## Results
 
 For visualization, we took a 2D slice of the 3D pressure matrix `P` at `z=Lz/2`.
 
 ![3D elastic wave simulation](img/elastic_wave_3D.gif)
 
-A resolution of 128x128x128 was used for the visualization. To replicate:
+A resolution of 128x128x128 was used for the visualization. The physical properites used were `ρ=1.0`, `μ=1.0`, and `K=1.0`. To replicate:
 
 ```
 julia --project -O3 --check-bounds=no scripts-part2/elastic_wave_3D_visualize.jl
