@@ -39,9 +39,9 @@ if me == 0
     close(file)
 
     # plot
-    plot([1,2,3,4], T_effs, xlabel="Number of GPUs", ylabel="T_eff (GB/s)", ylims=(0, extrema(T_effs)[2]), title="GPU Weak Scaling Experiment", label=false)
+    plot([1,2,3,4], T_effs, xlabel="Number of GPUs", ylabel="T_eff (GB/s)", ylims=(0, extrema(T_effs)[2]), title="GPU Weak Scaling Experiment", label=false, lw=3)
     png("$(@__DIR__)/../docs/img/scaling_experiment_mgpu_teff")
-    plot([1,2,3,4], t_tocs[1]./t_tocs, ylims=(0, 1.0), xlabel="Number of GPUs", ylabel="Parallal Efficiency", title="GPU Weak Scaling Experiment", label=false)
+    plot([1,2,3,4], t_tocs[1]./t_tocs, ylims=(0, 1.0), xlabel="Number of GPUs", ylabel="Parallal Efficiency", title="GPU Weak Scaling Experiment", label=false, lw=3)
     png("$(@__DIR__)/../docs/img/scaling_experiment_mgpu_pareff")
 end
 
