@@ -42,7 +42,7 @@ And in the case where we want to get the steady state solution, we calculate `H_
 ![Screenshot from 2021-12-23 01-13-04](https://user-images.githubusercontent.com/50950798/147168968-3077b8e4-a2fd-48c8-a9bc-f41f6c7637d9.png)
 
 
-2. Since we use damping, we update `dH/dτ` in the seccond step with a damping parameter:
+2. Since we use damping, we update `dH/dτ` in the second step with a damping parameter:
 
 ![Screenshot from 2021-12-14 19-23-02](https://user-images.githubusercontent.com/50950798/146057387-b265abab-26ec-46c4-b2b5-750ca502188c.png)
 
@@ -81,7 +81,7 @@ So lets look again at `ResH`:
 
 ![Screenshot from 2021-12-14 19-20-56](https://user-images.githubusercontent.com/50950798/146061372-06bb4755-25d3-4472-853c-0cb1320da68d.png)
 
-And since we solve this Equation in 3 Dimentions, we get this equivalent formula:
+And since we solve this Equation in 3 dimentions, we get this equivalent formula:
 
 ![Screenshot from 2021-12-14 20-00-25](https://user-images.githubusercontent.com/50950798/146062548-6da42bab-78e9-461c-8d5c-6e2ec8308215.png)
 
@@ -286,7 +286,7 @@ This plot shows that after a grid size of 256x256x256, the value at the point (5
   <img alt="Dark" src="img/diffusion3D_workprecision_6.png" width="49%">
 </p>
 
-We considered a tolerance of `tol=1e-24` as a well converged solution, which is still numerically stable. Also decreasing the the tolerance further resulted in very long runtimes. So for practial purposes we compared in this plot the absolute (L2 norm of absolute difference) and relative (L2 norm of absolute difference / L2 norm of well converged solution) convergence behavior in comparison with the solution obtained with a tolerance of `tol=1e-24`. And as you can see decreasing the tolerance by a factor of `1/10` scales linearly in terms of the relative and absolute error.
+We considered a tolerance of `tol=1e-24` as a well converged solution, which is still numerically stable. Also decreasing the the tolerance further resulted in very long runtimes. So for practical purposes we compared in this plot the absolute (L2 norm of absolute difference) and relative (L2 norm of absolute difference / L2 norm of well converged solution) convergence behavior in comparison with the solution obtained with a tolerance of `tol=1e-24`. And as you can see decreasing the tolerance by a factor of `1/10` scales linearly in terms of the relative and absolute error.
 
 ## References
 <a id="1">[1]</a> https://ark.intel.com/content/www/us/en/ark/products/212279/intel-core-i711700-processor-16m-cache-up-to-4-90-ghz.html
