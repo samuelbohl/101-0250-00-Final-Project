@@ -1,7 +1,7 @@
-using Printf, LinearAlgebra, Plots
-using ImplicitGlobalGrid
+using Printf, LinearAlgebra, Plots, ImplicitGlobalGrid, ParallelStencil, ParallelStencil.FiniteDifferences3D
 import MPI
 
+# Initialize Globals
 if !@isdefined USE_GPU
     const USE_GPU = true
 end
@@ -14,15 +14,18 @@ if !@isdefined VISUALIZE
     const VISUALIZE = true
 end
 
-using ParallelStencil
-using ParallelStencil.FiniteDifferences3D
+# Initialize `ParallelStencil.jl`
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
     @init_parallel_stencil(Threads, Float64, 3);
 end
 
+# Helper for shorter notation
 @views inn(A) = A[2:end-1,2:end-1,2:end-1]
+
+# Helper - Calculates global L2 norm using MPI
+norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WORLD)))
 
 @parallel function compute_ResH!(H, Hᵗ, ResH, _dt, D_dx², D_dy², D_dz²)
     @all(ResH) = -(@inn(H) - @inn(Hᵗ)) * _dt + (@d2_xi(H)*D_dx² + @d2_yi(H)*D_dy² + @d2_zi(H)*D_dz²)
@@ -39,19 +42,19 @@ end
     return
 end
 
-norm_g(A) = (sum2_l = sum(A.^2); sqrt(MPI.Allreduce(sum2_l, MPI.SUM, MPI.COMM_WORLD)))
-
 """
     diffusion_3D(res)
 
-Runs the 3D dualtime diffusion simulation
+Runs the 3D dualtime diffusion simulation on multiple processes using MPI via `ImplicitGlobalGrid.jl`.
 
 # Arguments
 - `res::Int`: xyz-resolutions of the simulation
 
 # Returns (Depending on globals)
-- `T_eff`: Effective memory throughput [GB/s] - if the BENCHMARK is true
-- `xc` and `H`: The global x-coordinate Array and the global solution array - if BENCHMARK is false
+- If the BENCHMARK is true ->
+    `T_eff`, `t_toc`, `nprocs` and `me`: Effective memory throughput [GB/s], Total calculation time, number of processes and process id
+- If BENCHMARK is false ->
+    `xc` and `H`: The global x-coordinate Array and the global solution array
 """
 @views function diffusion_3D(res::Int)
 
@@ -184,13 +187,12 @@ Runs the 3D dualtime diffusion simulation
 
     # Calculate performance
     @static if BENCHMARK
-        t_toc = Base.time() - t_tic                                          # Stop the clock
-        ResH_bound = length(ResH) + length(H) + length(Hᵗ)                   # Memory access: write ResH and read H + Hᵗ
-        dHdt_bound = 2 * length(dHdt) + length(ResH)                         # Memory access: update dHdt and read ResH
-        H_bound = 2 * length(H) + length(dHdt)                               # Memory access: update H and read dHdt
-        A_eff = 1e-9 * (ResH_bound + dHdt_bound + H_bound) * sizeof(Float64) # Effective main memory access per iteration [GB]
-        t_it  = t_toc/(ittot-warmup)                                         # Execution time per iteration [s]
-        T_eff = A_eff/t_it                                                   # Effective memory throughput [GB/s]
+        t_toc = Base.time() - t_tic                            # Stop the clock
+        reads = length(Hᵗ)                                     # Read Only Memory Access: Hᵗ
+        updates = length(H) + length(dHdt)                     # Update Memory access: H and dHdt
+        A_eff = 1e-9 * (2 * updates + reads) * sizeof(Float64) # Effective main memory access per iteration [GB]
+        t_it  = t_toc/(ittot-warmup)                           # Execution time per iteration [s]
+        T_eff = A_eff/t_it                                     # Effective memory throughput [GB/s]
         println("time(sec)=$t_toc T_eff=$T_eff")
     end
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it_t, nx, ittot)
@@ -205,7 +207,7 @@ Runs the 3D dualtime diffusion simulation
         end
     end
 
-    # Return T_eff, nprocs and me if BENCHMARK and Result otherwise
+    # Return T_eff, t_toc nprocs and me if BENCHMARK and Result otherwise
     @static if BENCHMARK
         return T_eff, t_toc, nprocs, me
     else

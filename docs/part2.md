@@ -32,7 +32,7 @@ The only thing left then is to update `∇V`:
 
 After the solver was up and running, we noticed some things that could be optimized.
 
-Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdy`) were removed to reduce memory footprint and memory access time, while at the same time not increasing the amount of computational work.
+Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdt`) were removed to reduce memory footprint and memory access time, while at the same time not increasing the amount of computational work.
 
 `∇V`, although being a temporary array, was not inlined because doing so would significantly increase the computational work required, and we are likely compute-bound rather than memory-bound for this problem.
 
@@ -69,7 +69,7 @@ A_eff = 1e-9 * sizeof(Float64) * (
 
 #### CPU Performance
 
-An AMD Ryzen 5 5600G (6C12T, T_peak=47.68 GB/s [[1]](#1)) was used for the CPU performance benchmark.
+An AMD Ryzen™ 5 5600G (6C12T, T_peak=47.68 GB/s [[1]](#1)) was used for the CPU performance benchmark.
 
 ![3D elastic wave CPU benchmark](img/elastic_wave_3D_scaling_experiment_cpu_6threads.png)
 
@@ -84,7 +84,7 @@ Replace `<num_threads>` with the amount of physical cores in your CPU.
 
 #### GPU Performance
 
-An NVIDIA GeForce RTX 3060 (T_eff=360 GB/s, 199 GFLOPS (FP64) [[2]](#2)) was used for the GPU performance benchmark.
+An NVIDIA GeForce RTX™ 3060 (T_peak=360 GB/s, 199 GFLOPS (FP64) [[2]](#2)) was used for the GPU performance benchmark.
 
 ![3D elastic wave GPU benchmark](img/elastic_wave_3D_scaling_experiment_gpu.png)
 

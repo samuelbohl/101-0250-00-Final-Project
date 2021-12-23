@@ -1,5 +1,6 @@
-using Printf, LinearAlgebra, Plots
+using Printf, LinearAlgebra, Plots, ParallelStencil, ParallelStencil.FiniteDifferences3D
 
+# Initialize Globals
 if !@isdefined USE_GPU
     const USE_GPU = false
 end
@@ -9,16 +10,14 @@ if !@isdefined BENCHMARK
 end
 
 if !@isdefined VISUALIZE
-    const VISUALIZE = true
+    const VISUALIZE = false
 end
 
 if !@isdefined STEADY
     const STEADY = false
 end
 
-using ParallelStencil
-using ParallelStencil.FiniteDifferences3D
-#ParallelStencil.@reset_parallel_stencil()
+# Initialize `ParallelStencil.jl`
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
@@ -47,19 +46,23 @@ end
 end
 
 """
-    diffusion_3D(res)
+    diffusion_3D(res[,tol])
 
 Runs the 3D dualtime diffusion simulation
 
 # Arguments
 - `res::Int`: xyz-resolutions of the simulation
+- `tol::Float64`(optional): tolerance for convergence - default: `1e-8`
 
 # Returns (Depending on globals)
-- `T_eff`: Effective memory throughput [GB/s] - if the BENCHMARK is true
-- `ittot`: Total number of iterations needed to reach steadystate - if STEADY is true and BENCHMARK is false
-- `xc` and `H`: The global x-coordinate Array and the global solution array - if STEADY and BENCHMARK are false
+- If BENCHMARK is true -> 
+    `T_eff`: Effective memory throughput [GB/s]
+- If STEADY is true and BENCHMARK is false -> 
+    `ittot`, `xc` and `H`: Total number of iterations needed to reach steadystate, the global x-coordinate Array and the global solution array
+- If STEADY and BENCHMARK are false -> 
+    `xc` and `H`: The global x-coordinate Array and the global solution array
 """
-@views function diffusion_3D(res::Int)
+@views function diffusion_3D(res::Int; tol=1e-8)
     # Physics
     lx, ly, lz = 10.0, 10.0, 10.0 # domain size
     D     = 1.0                   # diffusion coefficient
@@ -68,7 +71,6 @@ Runs the 3D dualtime diffusion simulation
 
     # Numerics
     nx, ny, nz = res, res, res
-    tol        = 1e-8             # tolerance
     itMax      = 1e4              # max number of iterations
     nout       = 10               # tol check
 
@@ -208,13 +210,12 @@ Runs the 3D dualtime diffusion simulation
 
     # Calculate performance
     @static if BENCHMARK
-        t_toc = Base.time() - t_tic                                          # Stop the clock
-        ResH_bound = length(ResH) + length(H) + length(Hᵗ)                   # Memory access: write ResH and read H + Hᵗ
-        dHdt_bound = 2 * length(dHdt) + length(ResH)                         # Memory access: update dHdt and read ResH
-        H_bound = 2 * length(H) + length(dHdt)                               # Memory access: update H and read dHdt
-        A_eff = 1e-9 * (ResH_bound + dHdt_bound + H_bound) * sizeof(Float64) # Effective main memory access per iteration [GB]
-        t_it  = t_toc/(ittot-warmup)                                         # Execution time per iteration [s]
-        T_eff = A_eff/t_it                                                   # Effective memory throughput [GB/s]
+        t_toc = Base.time() - t_tic                            # Stop the clock
+        reads = length(Hᵗ)                                     # Read Only Memory Access: Hᵗ
+        updates = length(H) + length(dHdt)                     # Update Memory access: H and dHdt
+        A_eff = 1e-9 * (2 * updates + reads) * sizeof(Float64) # Effective main memory access per iteration [GB]
+        t_it  = t_toc/(ittot-warmup)                           # Execution time per iteration [s]
+        T_eff = A_eff/t_it                                     # Effective memory throughput [GB/s]
         println("time(sec)=$t_toc T_eff=$T_eff")
     end
     @printf("Ttime steps = %d, nx = %d, iterations tot = %d \n", it_t, nx, ittot)
@@ -228,7 +229,7 @@ Runs the 3D dualtime diffusion simulation
     @static if BENCHMARK
         return T_eff
     elseif STEADY
-        return ittot
+        return ittot, xc, Array(H)
     else
         return xc, Array(H)
     end
