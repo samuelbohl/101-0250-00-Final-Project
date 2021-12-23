@@ -38,6 +38,33 @@ Temporary arrays that are used only once (`dVxdt`, `dVydt`, `dVzdt`, `dPdt`) wer
 
 Constant divisions were also replaced by multiplication of their inverse, and consecutive multiplications were merged to reduce the computational work.
 
+The resulting kernels after optimizations:
+
+```julia
+@all(τxx) = @all(τxx) + @d_xi(Vx)*dt2μ_dx - dt1_3*@inn_yz(∇V)
+@all(τyy) = @all(τyy) + @d_yi(Vy)*dt2μ_dy - dt1_3*@inn_xz(∇V)
+@all(τzz) = @all(τzz) + @d_zi(Vz)*dt2μ_dz - dt1_3*@inn_xy(∇V)
+@all(τxy) = @all(τxy) + @d_yi(Vx)*dtμ_dy + @d_xi(Vy)*dtμ_dx
+@all(τyz) = @all(τyz) + @d_zi(Vy)*dtμ_dz + @d_yi(Vz)*dtμ_dy
+@all(τzx) = @all(τzx) + @d_xi(Vz)*dtμ_dx + @d_zi(Vx)*dtμ_dz
+```
+
+```julia
+@inn(Vx) = @inn(Vx) - (@d_xi(P)-@d_xa(τxx))*dt_ρ_dx + @d_ya(τxy)*dt_ρ_dy + @d_za(τzx)*dt_ρ_dz
+@inn(Vy) = @inn(Vy) - (@d_yi(P)-@d_ya(τyy))*dt_ρ_dy + @d_za(τyz)*dt_ρ_dz + @d_xa(τxy)*dt_ρ_dx
+@inn(Vz) = @inn(Vz) - (@d_zi(P)-@d_za(τzz))*dt_ρ_dz + @d_xa(τzx)*dt_ρ_dx + @d_ya(τyz)*dt_ρ_dy
+```
+
+```julia
+@all(∇V) = @d_xa(Vx)*_dx + @d_ya(Vy)*_dy + @d_za(Vz)*_dz
+```
+
+```julia
+@all(P) = @all(P) - dtK*@all(∇V)
+```
+
+Most modern hardware can do many FP64 operations in the same amount of time as it takes to do a single memory operation. Considering that there are almost as many memory operations as there are floating point operations in the optimized kernels, we are likely to be memory-bound for this problem.
+
 ### File structure
 
 The relavant files for this part are listed in the tree below.
@@ -96,8 +123,6 @@ An AMD Ryzen™ 5 5600G (6C12T, T_peak=47.68 GB/s [[1]](#1)) was used for the CP
 
 ![3D elastic wave CPU benchmark](img/elastic_wave_3D_scaling_experiment_cpu_6threads.png)
 
-It is obvious from the graph that we are compute-bound for this problem on this particular CPU.
-
 To run the CPU performance benchmark:
 ```
 export JULIA_NUM_THREADS=<num_threads>
@@ -112,8 +137,6 @@ An NVIDIA GeForce RTX™ 3060 (T_peak=360 GB/s, 199 GFLOPS (FP64) [[2]](#2)) was
 ![3D elastic wave GPU benchmark](img/elastic_wave_3D_scaling_experiment_gpu.png)
 
 A resolution of `512x512x512` wasn't tested because it didn't fit in the 12 GB of VRAM that the 3060 had.
-
-In this case, too, we are bound by the computing power rather than the memory bandwidth.
 
 To run the GPU performance benchmark:
 
