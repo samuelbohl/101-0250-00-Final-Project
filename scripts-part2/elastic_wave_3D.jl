@@ -7,22 +7,22 @@ else
 end
 using Plots
 
-@parallel function compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, _dx, _dy, _dz)
-    @all(τxx) = @all(τxx) + dt*(2.0*μ*(@d_xi(Vx)*_dx) - 1.0/3.0*@inn_yz(∇V))
-    @all(τyy) = @all(τyy) + dt*(2.0*μ*(@d_yi(Vy)*_dy) - 1.0/3.0*@inn_xz(∇V))
-    @all(τzz) = @all(τzz) + dt*(2.0*μ*(@d_zi(Vz)*_dz) - 1.0/3.0*@inn_xy(∇V))
-    @all(τxy) = @all(τxy) + dt*μ*(@d_yi(Vx)*_dy + @d_xi(Vy)*_dx)
-    @all(τyz) = @all(τyz) + dt*μ*(@d_zi(Vy)*_dz + @d_yi(Vz)*_dy)
-    @all(τzx) = @all(τzx) + dt*μ*(@d_xi(Vz)*_dx + @d_zi(Vx)*_dz)
+@parallel function compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt1_3, dtμ_dx, dtμ_dy, dtμ_dz, dt2μ_dx, dt2μ_dy, dt2μ_dz)
+    @all(τxx) = @all(τxx) + @d_xi(Vx)*dt2μ_dx - dt1_3*@inn_yz(∇V)
+    @all(τyy) = @all(τyy) + @d_yi(Vy)*dt2μ_dy - dt1_3*@inn_xz(∇V)
+    @all(τzz) = @all(τzz) + @d_zi(Vz)*dt2μ_dz - dt1_3*@inn_xy(∇V)
+    @all(τxy) = @all(τxy) + @d_yi(Vx)*dtμ_dy + @d_xi(Vy)*dtμ_dx
+    @all(τyz) = @all(τyz) + @d_zi(Vy)*dtμ_dz + @d_yi(Vz)*dtμ_dy
+    @all(τzx) = @all(τzx) + @d_xi(Vz)*dtμ_dx + @d_zi(Vx)*dtμ_dz
     return
 end
 
-@parallel function compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ, _dx, _dy, _dz)
+@parallel function compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ_dx, dt_ρ_dy, dt_ρ_dz)
 	# dVxdt = -1/ρ*(@d_xi(P)*_dx - @d_xa(τxx)*_dx - @d_ya(τxy)*_dy - @d_za(τzx)*_dz)
 	# Vx    = Vx + dt*dVxdt
-    @inn(Vx) = @inn(Vx) - dt_ρ*(@d_xi(P)*_dx - @d_xa(τxx)*_dx - @d_ya(τxy)*_dy - @d_za(τzx)*_dz)
-    @inn(Vy) = @inn(Vy) - dt_ρ*(@d_yi(P)*_dy - @d_ya(τyy)*_dy - @d_za(τyz)*_dz - @d_xa(τxy)*_dx)
-    @inn(Vz) = @inn(Vz) - dt_ρ*(@d_zi(P)*_dz - @d_za(τzz)*_dz - @d_xa(τzx)*_dx - @d_ya(τyz)*_dy)
+    @inn(Vx) = @inn(Vx) - (@d_xi(P) - @d_xa(τxx))*dt_ρ_dx + @d_ya(τxy)*dt_ρ_dy + @d_za(τzx)*dt_ρ_dz
+    @inn(Vy) = @inn(Vy) - (@d_yi(P) - @d_ya(τyy))*dt_ρ_dy + @d_za(τyz)*dt_ρ_dz + @d_xa(τxy)*dt_ρ_dx
+    @inn(Vz) = @inn(Vz) - (@d_zi(P) - @d_za(τzz))*dt_ρ_dz + @d_xa(τzx)*dt_ρ_dx + @d_ya(τyz)*dt_ρ_dy
     return
 end
 
@@ -63,7 +63,11 @@ Runs the 3D elastic wave simulation\\
 
 	# Optimized numerics
 	_dx, _dy, _dz = 1.0/dx, 1.0/dy, 1.0/dz
+    dtμ_dx, dtμ_dy, dtμ_dz = dt*μ*_dx, dt*μ*_dy, dt*μ*_dz
+    dt2μ_dx, dt2μ_dy, dt2μ_dz = 2.0*dtμ_dx, 2.0*dtμ_dy, 2.0*dtμ_dz
 	dt_ρ = dt/ρ
+    dt_ρ_dx, dt_ρ_dy, dt_ρ_dz = dt_ρ*_dx, dt_ρ*_dy, dt_ρ*_dz
+    dt1_3 = dt/3.0
 
     # Array initialisation
     P   = Data.Array(exp.([-1.0*((x-Lx/2)^2 + (y-Ly/2)^2 + (z-Lz/2)^2) for x=xc, y=yc, z=zc]))
@@ -91,8 +95,8 @@ Runs the 3D elastic wave simulation\\
 
     # Time loop
     for it = 1:nt
-        @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, μ, dt, _dx, _dy, _dz)
-        @parallel compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ, _dx, _dy, _dz)
+        @parallel compute_τ!(Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt1_3, dtμ_dx, dtμ_dy, dtμ_dz, dt2μ_dx, dt2μ_dy, dt2μ_dz)
+        @parallel compute_V!(P, Vx, Vy, Vz, ∇V, τxx, τyy, τzz, τxy, τyz, τzx, dt_ρ_dx, dt_ρ_dy, dt_ρ_dz)
         @parallel compute_∇V!(Vx, Vy, Vz, ∇V, _dx, _dy, _dz)
         @parallel compute_P!(P, ∇V, K, dt)
 
