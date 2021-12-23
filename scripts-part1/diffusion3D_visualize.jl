@@ -1,4 +1,4 @@
-# julia -O3 --check-bounds=no -t 4 ./scripts-part1/diffusion3D_visualize.jl
+# julia --project -O3 --check-bounds=no -t 4 ./scripts-part1/diffusion3D_visualize.jl
 
 # Initialize Globals
 const USE_GPU = true

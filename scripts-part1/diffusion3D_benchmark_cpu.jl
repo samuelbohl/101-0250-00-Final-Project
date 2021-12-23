@@ -1,7 +1,7 @@
-# julia -O3 --check-bounds=no -t 1 ./scripts-part1/diffusion3D_benchmark_cpu.jl
-# julia -O3 --check-bounds=no -t 4 ./scripts-part1/diffusion3D_benchmark_cpu.jl
-# julia -O3 --check-bounds=no -t 8 ./scripts-part1/diffusion3D_benchmark_cpu.jl
-# julia -O3 --check-bounds=no -t 16 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia --project -O3 --check-bounds=no -t 1 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia --project -O3 --check-bounds=no -t 4 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia --project -O3 --check-bounds=no -t 8 ./scripts-part1/diffusion3D_benchmark_cpu.jl
+# julia --project -O3 --check-bounds=no -t 16 ./scripts-part1/diffusion3D_benchmark_cpu.jl
 
 # Initialize Globals
 const USE_GPU = false
